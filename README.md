@@ -1,29 +1,35 @@
-# pyEdge
+# pyEdge ✨
 
-A modern desktop connector UI for Solid Edge, built with Python + PyQt.
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Platform Windows](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
+[![Last Commit](https://img.shields.io/github/last-commit/zandargo/pyEdge)](https://github.com/zandargo/pyEdge/commits/main)
+[![GitHub Stars](https://img.shields.io/github/stars/zandargo/pyEdge?style=social)](https://github.com/zandargo/pyEdge/stargazers)
 
-`pyEdge` opens a small Fluent-style app that checks your currently active Solid Edge document through COM automation.
+> A modern Python desktop helper for connecting to your active Solid Edge document.
 
-## Features
+`pyEdge` is a lightweight PyQt app with a clean Fluent-style interface. Open Solid Edge, click one button, and it reads your active document name via COM.
 
-- Clean frameless desktop UI (PyQt5 + QFluentWidgets)
-- One-click scan of the active Solid Edge document
-- Background worker thread to keep the UI responsive
-- Clear status feedback (`Ready`, `Processing`, `Success`, `Error`)
+## Why pyEdge? 🚀
 
-## Requirements
+- Sleek frameless UI (PyQt5 + QFluentWidgets)
+- One-click active document scan
+- Worker thread keeps the UI responsive
+- Friendly status states: `Ready`, `Processing`, `Success`, `Error`
 
-- Windows 10/11
+## Tech Stack 🧰
+
 - Python 3.10+ (3.11 recommended)
-- Solid Edge installed and running
-- An active Solid Edge document open before scanning
+- PyQt5
+- PyQt-Fluent-Widgets
+- pywin32 (COM bridge)
+- Windows 10/11 + Solid Edge installed
 
-## Quick Start
+## Quick Start ⚡
 
-### 1. Clone or open this folder
+### 1. Clone the repo
 
 ```powershell
-git clone <your-repo-url>
+git clone https://github.com/zandargo/pyEdge
 cd pyEdge
 ```
 
@@ -33,7 +39,7 @@ cd pyEdge
 python -m venv venv
 ```
 
-### 3. Activate the virtual environment
+### 3. Activate it
 
 PowerShell:
 
@@ -60,48 +66,42 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## Project Structure
+## Project Layout 🗂️
 
 ```text
 pyEdge/
 |-- app_ui.py
 |-- main.py
+|-- requirements.txt
 |-- services/
 |   `-- solid_edge.py
 `-- .gitignore
 ```
 
-## How It Works
+## How It Works 🔍
 
-- `main.py`: boots the Qt application and opens the main window.
-- `app_ui.py`: builds the UI and starts a worker thread for Solid Edge checks.
-- `services/solid_edge.py`: uses `win32com.client` to connect to `SolidEdge.Application` and read the active document name.
+- `main.py`: starts the Qt app and opens the main window.
+- `app_ui.py`: renders UI and launches a worker for the Solid Edge check.
+- `services/solid_edge.py`: connects to `SolidEdge.Application` and reads `ActiveDocument.Name`.
 
-## Common Issues
+## Troubleshooting 🛠️
 
-### `Error: Solid Edge must be open with an active document.`
+### "Solid Edge must be open with an active document"
 
-- Open Solid Edge.
-- Open or create a document in Solid Edge.
-- Click `Scan Active Document` again.
+- Open Solid Edge first.
+- Open (or create) any document.
+- Try `Scan Active Document` again.
 
 ### `ModuleNotFoundError`
 
-Your virtual environment is likely not active, or dependencies are not installed.
+Your venv is probably not active, or packages were not installed:
 
 ```powershell
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-## Git Setup (Optional)
+## Notes ✅
 
-If you want to initialize this as a new repository:
-
-```powershell
-git init
-git add .
-git commit -m "Initial commit"
-```
-
-The existing `.gitignore` is already configured to exclude `venv`, `__pycache__`, and other Python-generated files.
+- `.gitignore` is already set up to ignore `venv`, `__pycache__`, and other Python artifacts.
+- This app is Windows-focused because Solid Edge COM automation requires Windows.
