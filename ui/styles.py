@@ -102,6 +102,11 @@ QListWidget#docList::item {
 }
 QListWidget#docList::item:selected {
     background-color: rgba(45, 140, 255, 70);
+    color: #ffffff;
+}
+QListWidget#docList::item:selected:active,
+QListWidget#docList::item:selected:!active {
+    color: #ffffff;
 }
 QScrollBar:vertical {
     background: rgba(255, 255, 255, 8);
