@@ -7,7 +7,16 @@
 
 > A modern Python desktop helper for connecting to your active Solid Edge document.
 
+> [!WARNING]
+> pyEdge is in **early development**. Features and UI behavior may change frequently, and some flows are still experimental.
+
 `pyEdge` is a lightweight PyQt app with a clean Fluent-style interface. Open Solid Edge, click one button, and it reads your active document name via COM.
+
+## Project Status 🚧
+
+- Current stage: **Early development / prototype**
+- APIs and UI details are still evolving
+- Bug reports and feedback are welcome while the project matures
 
 ## Why pyEdge? 🚀
 

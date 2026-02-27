@@ -8,21 +8,34 @@ from PyQt5.QtCore import QEvent, QEasingCurve, QParallelAnimationGroup, QPoint, 
 from PyQt5.QtGui import QFont, QIcon, QPainter, QPen, QPixmap
 from PyQt5.QtWidgets import QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QToolButton, QVBoxLayout, QWidget
 
-from services.solid_edge import get_active_document_name
+from services.solid_edge import disconnect_from_solid_edge, get_active_document_name
 
 
 class SolidEdgeWorker(QThread):
-    """Background worker that fetches the active Solid Edge document name."""
+    """Background worker for connect/disconnect COM actions."""
 
-    finished = pyqtSignal(str)
+    finished = pyqtSignal(str, str)
+
+    def __init__(self, action):
+        super().__init__()
+        self.action = action
 
     def run(self):
-        """Execute COM lookup off the UI thread and emit a user-facing message."""
-        try:
-            doc_name = get_active_document_name()
-            self.finished.emit(f"Successfully linked to: {doc_name}")
-        except Exception:
-            self.finished.emit("Error: Solid Edge must be open with an active document.")
+        """Execute COM action off the UI thread and emit a user-facing message."""
+        if self.action == "connect":
+            try:
+                doc_name = get_active_document_name()
+                self.finished.emit("connect", f"Connected to: {doc_name}")
+            except Exception:
+                self.finished.emit("connect", "Error: Solid Edge must be open with an active document.")
+            return
+
+        if self.action == "disconnect":
+            try:
+                disconnect_from_solid_edge()
+                self.finished.emit("disconnect", "Disconnected.")
+            except Exception:
+                self.finished.emit("disconnect", "Error: Failed to disconnect from Solid Edge.")
 
 
 class ModernCADApp(QWidget):
@@ -40,15 +53,20 @@ class ModernCADApp(QWidget):
         self._drag_pos = None
 
         # Import after QApplication exists to avoid premature QWidget creation.
-        from qfluentwidgets import PrimaryPushButton, BodyLabel, SubtitleLabel, setTheme, Theme
+        from qfluentwidgets import BodyLabel, PrimaryPushButton, PushButton, SubtitleLabel, Theme, setTheme
 
         setTheme(Theme.DARK)
 
-        self._build_ui(PrimaryPushButton, BodyLabel, SubtitleLabel)
+        self._build_ui(PrimaryPushButton, PushButton, BodyLabel, SubtitleLabel)
         self._set_status("ready", "Status: Ready")
+        self._connected = False
+        self._connected_doc = None
+        self.worker = None
+        self._set_connection_indicator()
 
         # Primary action wiring.
-        self.action_btn.clicked.connect(self.run_task)
+        self.action_btn.clicked.connect(self.connect_task)
+        self.disconnect_btn.clicked.connect(self.disconnect_task)
 
     def showEvent(self, event):
         """Play one-time entry animation when the window first appears."""
@@ -88,7 +106,7 @@ class ModernCADApp(QWidget):
 
         return super().eventFilter(obj, event)
 
-    def _build_ui(self, PrimaryPushButton, BodyLabel, SubtitleLabel):
+    def _build_ui(self, PrimaryPushButton, PushButton, BodyLabel, SubtitleLabel):
         """Create the full widget tree and stylesheet for the main window."""
         self.setObjectName("root")
 
@@ -174,16 +192,25 @@ class ModernCADApp(QWidget):
         self.title = SubtitleLabel("Solid Edge Connector")
         self.title.setObjectName("title")
 
-        self.subtitle = BodyLabel("Bridge your active Solid Edge document in one click.")
+        self.subtitle = BodyLabel("Connect to your active Solid Edge document and disconnect when done.")
         self.subtitle.setObjectName("subtitle")
         self.subtitle.setWordWrap(True)
 
         self.status_label = BodyLabel("")
         self.status_label.setObjectName("status")
 
-        self.action_btn = PrimaryPushButton("Scan Active Document")
+        self.connection_label = BodyLabel("")
+        self.connection_label.setObjectName("connection")
+        self.connection_label.setWordWrap(True)
+
+        self.action_btn = PrimaryPushButton("Connect Active Document")
         self.action_btn.setObjectName("scanButton")
         self.action_btn.setMinimumHeight(44)
+
+        self.disconnect_btn = PushButton("Disconnect")
+        self.disconnect_btn.setObjectName("disconnectButton")
+        self.disconnect_btn.setMinimumHeight(44)
+        self.disconnect_btn.setEnabled(False)
 
         btn_font = QFont()
         btn_font.setPointSize(10)
@@ -194,8 +221,10 @@ class ModernCADApp(QWidget):
         card_layout.addWidget(self.subtitle)
         card_layout.addSpacing(10)
         card_layout.addWidget(self.status_label)
+        card_layout.addWidget(self.connection_label)
         card_layout.addSpacing(10)
         card_layout.addWidget(self.action_btn)
+        card_layout.addWidget(self.disconnect_btn)
 
         center.addWidget(self.card)
         center.addStretch(1)
@@ -305,6 +334,15 @@ class ModernCADApp(QWidget):
                 border-radius: 10px;
                 background-color: rgba(255, 255, 255, 12);
             }
+            QLabel#connection {
+                font-size: 13px;
+                font-weight: 600;
+                padding: 8px 12px;
+                border-radius: 10px;
+                color: #8da0bf;
+                background-color: rgba(255, 255, 255, 8);
+                border: 1px solid rgba(255, 255, 255, 14);
+            }
             QPushButton#scanButton {
                 border-radius: 10px;
                 background-color: #2d8cff;
@@ -314,6 +352,23 @@ class ModernCADApp(QWidget):
             }
             QPushButton#scanButton:pressed {
                 background-color: #1f78e0;
+            }
+            QPushButton#disconnectButton {
+                border-radius: 10px;
+                background-color: rgba(255, 255, 255, 16);
+                color: #d9e2f2;
+                border: 1px solid rgba(255, 255, 255, 24);
+            }
+            QPushButton#disconnectButton:hover {
+                background-color: rgba(255, 255, 255, 24);
+            }
+            QPushButton#disconnectButton:pressed {
+                background-color: rgba(255, 255, 255, 32);
+            }
+            QPushButton#disconnectButton:disabled {
+                color: rgba(217, 226, 242, 120);
+                background-color: rgba(255, 255, 255, 8);
+                border-color: rgba(255, 255, 255, 14);
             }
             """
         )
@@ -412,16 +467,66 @@ class ModernCADApp(QWidget):
             "border: 1px solid rgba(255, 255, 255, 18);"
         )
 
-    def run_task(self):
-        """Start document lookup in worker thread and lock UI action button."""
-        self._set_status("processing", "Status: Processing...")
+    def _set_connection_indicator(self):
+        """Render persistent connection state separate from transient status text."""
+        if self._connected and self._connected_doc:
+            self.connection_label.setText(f"Connection: Connected ({self._connected_doc})")
+            self.connection_label.setStyleSheet(
+                "color: #34d399;"
+                "background-color: rgba(52, 211, 153, 24);"
+                "border: 1px solid rgba(52, 211, 153, 70);"
+            )
+            return
+
+        self.connection_label.setText("Connection: Disconnected")
+        self.connection_label.setStyleSheet(
+            "color: #8da0bf;"
+            "background-color: rgba(255, 255, 255, 8);"
+            "border: 1px solid rgba(255, 255, 255, 14);"
+        )
+
+    def _start_worker(self, action):
+        """Start a COM action worker and lock action buttons while it runs."""
         self.action_btn.setEnabled(False)
-        self.worker = SolidEdgeWorker()
+        self.disconnect_btn.setEnabled(False)
+        self.worker = SolidEdgeWorker(action)
         self.worker.finished.connect(self._on_worker_finished)
         self.worker.start()
 
-    def _on_worker_finished(self, msg):
-        """Update status from worker result and re-enable action button."""
-        status_state = "success" if msg.startswith("Successfully") else "error"
-        self._set_status(status_state, msg)
+    def connect_task(self):
+        """Connect to the active document without blocking the UI thread."""
+        self._set_status("processing", "Status: Connecting...")
+        self._start_worker("connect")
+
+    def disconnect_task(self):
+        """Disconnect from Solid Edge and release COM resources."""
+        self._set_status("processing", "Status: Disconnecting...")
+        self._start_worker("disconnect")
+
+    def _on_worker_finished(self, action, msg):
+        """Update status from worker result and restore action button states."""
+        is_success = not msg.startswith("Error")
+
+        if action == "connect":
+            self._connected = is_success
+            self._connected_doc = msg.replace("Connected to: ", "", 1) if is_success else None
+        elif action == "disconnect" and is_success:
+            self._connected = False
+            self._connected_doc = None
+
+        self._set_status("success" if is_success else "error", msg)
+        self._set_connection_indicator()
         self.action_btn.setEnabled(True)
+        self.disconnect_btn.setEnabled(self._connected)
+
+    def closeEvent(self, event):
+        """Ensure the Solid Edge COM session is disconnected when app closes."""
+        if self.worker and self.worker.isRunning():
+            self.worker.wait(2000)
+
+        try:
+            disconnect_from_solid_edge()
+        except Exception:
+            pass
+
+        super().closeEvent(event)
