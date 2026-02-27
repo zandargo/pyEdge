@@ -1,8 +1,9 @@
 """Main document workspace panel with dynamic pages by document type."""
 
-from typing import Dict, List, Tuple, Type
+from typing import Any, Dict, List, Tuple, Type
 
-from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QStackedWidget, QVBoxLayout
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QFormLayout, QFrame, QHBoxLayout, QLabel, QScrollArea, QStackedWidget, QVBoxLayout, QWidget
 
 
 class DocumentPanel(QFrame):
@@ -13,7 +14,7 @@ class DocumentPanel(QFrame):
         self.setObjectName("mainPanel")
 
         self._PushButtonClass = PushButton
-        self.page_widgets: Dict[str, Dict[str, QLabel]] = {}
+        self.page_widgets: Dict[str, Dict[str, Any]] = {}
         self.doc_pages: Dict[str, QFrame] = {}
         self.action_buttons: Dict[str, List] = {}
 
@@ -81,6 +82,43 @@ class DocumentPanel(QFrame):
         active_value = QLabel("-")
         active_value.setObjectName("metaValue")
 
+        custom_props_key = None
+        custom_props_scroll = None
+        custom_props_panel = None
+        custom_props_form = None
+        custom_props_hint = None
+        if doc_type == "Draft":
+            custom_props_key = QLabel("Custom Properties")
+            custom_props_key.setObjectName("customPropsTitle")
+
+            custom_props_panel = QFrame(page)
+            custom_props_panel.setObjectName("metaValue")
+
+            panel_layout = QVBoxLayout(custom_props_panel)
+            panel_layout.setContentsMargins(8, 8, 8, 8)
+            panel_layout.setSpacing(6)
+
+            custom_props_hint = QLabel("Loading custom properties...")
+            custom_props_hint.setObjectName("pageSubtitle")
+            custom_props_hint.setWordWrap(True)
+
+            custom_props_form_host = QWidget(custom_props_panel)
+            custom_props_form = QFormLayout(custom_props_form_host)
+            custom_props_form.setContentsMargins(0, 0, 0, 0)
+            custom_props_form.setSpacing(8)
+            custom_props_form.setLabelAlignment(Qt.AlignLeft)
+            custom_props_form.setFormAlignment(Qt.AlignTop)
+
+            panel_layout.addWidget(custom_props_hint)
+            panel_layout.addWidget(custom_props_form_host)
+
+            custom_props_scroll = QScrollArea(page)
+            custom_props_scroll.setObjectName("customPropsScroll")
+            custom_props_scroll.setWidgetResizable(True)
+            custom_props_scroll.setFrameShape(QFrame.NoFrame)
+            custom_props_scroll.setMinimumHeight(200)
+            custom_props_scroll.setWidget(custom_props_panel)
+
         action_row = QHBoxLayout()
         action_row.setSpacing(8)
 
@@ -102,6 +140,9 @@ class DocumentPanel(QFrame):
         layout.addWidget(path_value)
         layout.addWidget(active_key)
         layout.addWidget(active_value)
+        if custom_props_key and custom_props_scroll:
+            layout.addWidget(custom_props_key)
+            layout.addWidget(custom_props_scroll)
         layout.addSpacing(10)
         layout.addLayout(action_row)
         layout.addStretch(1)
@@ -111,6 +152,9 @@ class DocumentPanel(QFrame):
             "path": path_value,
             "active": active_value,
         }
+        if custom_props_form is not None and custom_props_hint is not None:
+            self.page_widgets[doc_type]["custom_props_form"] = custom_props_form
+            self.page_widgets[doc_type]["custom_props_hint"] = custom_props_hint
         self.action_buttons[doc_type] = action_buttons
         return page
 
@@ -148,6 +192,7 @@ class DocumentPanel(QFrame):
             ],
             "Draft": [
                 ("Activate Draft", "activate"),
+                ("Save Custom Properties", "save_custom_props"),
                 ("Copy Draft Path", "copy_path"),
                 ("Open Draft Folder", "open_folder"),
             ],

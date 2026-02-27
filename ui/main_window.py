@@ -6,6 +6,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from PyQt5.QtCore import (
+    QDate,
     QEvent,
     QEasingCurve,
     QObject,
@@ -18,7 +19,13 @@ from PyQt5.QtCore import (
 from PyQt5.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
+    QCheckBox,
+    QDateEdit,
+    QDoubleSpinBox,
+    QFormLayout,
+    QLineEdit,
     QListWidgetItem,
+    QLabel,
     QVBoxLayout,
     QWidget,
 )
@@ -49,6 +56,7 @@ class ModernCADApp(QWidget):
         self._selection_key: Optional[str] = None
         self._preferred_selection_key: Optional[str] = None
         self._status_message: str = ""
+        self._draft_custom_inputs: Dict[str, Dict[str, Any]] = {}
         self.worker: Optional[SolidEdgeWorker] = None
 
         from qfluentwidgets import BodyLabel, PrimaryPushButton, PushButton, SubtitleLabel, Theme, setTheme
@@ -265,11 +273,17 @@ class ModernCADApp(QWidget):
         self.doc_panel.empty_message.setText(message)
         self.doc_panel.doc_stack.setCurrentWidget(self.doc_panel.empty_page)
 
-    def _start_worker(self, action: str, payload: Optional[Dict[str, str]] = None) -> None:
-        self.nav_panel.connect_btn.setEnabled(False)
-        self.nav_panel.refresh_btn.setEnabled(False)
-        self.nav_panel.disconnect_btn.setEnabled(False)
-        self.nav_panel.doc_list.setEnabled(False)
+    def _start_worker(
+        self,
+        action: str,
+        payload: Optional[Dict[str, Any]] = None,
+        disable_controls: bool = True,
+    ) -> None:
+        if disable_controls:
+            self.nav_panel.connect_btn.setEnabled(False)
+            self.nav_panel.refresh_btn.setEnabled(False)
+            self.nav_panel.disconnect_btn.setEnabled(False)
+            self.nav_panel.doc_list.setEnabled(False)
 
         self.worker = SolidEdgeWorker(action, payload)
         self.worker.finished.connect(self._on_worker_finished)
@@ -355,7 +369,167 @@ class ModernCADApp(QWidget):
         widgets["path"].setText(document.full_name)
         widgets["active"].setText("Yes" if document.is_active else "No")
 
+        custom_props_form = widgets.get("custom_props_form")
+        custom_props_hint = widgets.get("custom_props_hint")
+        if isinstance(custom_props_form, QFormLayout):
+            self._clear_draft_custom_property_form(custom_props_form)
+            self._draft_custom_inputs = {}
+        if isinstance(custom_props_hint, QLabel):
+            custom_props_hint.setText("Loading custom properties...")
+            self._start_worker(
+                "draft_custom_properties",
+                {
+                    "full_name": document.full_name,
+                    "name": document.name,
+                    "selection_key": self._selection_key or "",
+                },
+                disable_controls=False,
+            )
+
         self.doc_panel.doc_stack.setCurrentWidget(self.doc_panel.doc_pages[doc_type])
+
+    def _clear_draft_custom_property_form(self, form: QFormLayout) -> None:
+        while form.rowCount() > 0:
+            form.removeRow(0)
+
+    @staticmethod
+    def _parse_date_value(value: Any) -> QDate:
+        if isinstance(value, QDate):
+            return value
+
+        text = str(value or "").strip()
+        if not text:
+            return QDate.currentDate()
+
+        text = text.split("T", 1)[0]
+        for fmt in ("yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy"):
+            parsed = QDate.fromString(text, fmt)
+            if parsed.isValid():
+                return parsed
+        return QDate.currentDate()
+
+    def _build_draft_custom_property_form(self, custom_properties: List[Dict[str, Any]]) -> None:
+        widgets = self.doc_panel.page_widgets.get("Draft", {})
+        form = widgets.get("custom_props_form")
+        hint = widgets.get("custom_props_hint")
+        if not isinstance(form, QFormLayout) or not isinstance(hint, QLabel):
+            return
+
+        self._clear_draft_custom_property_form(form)
+        self._draft_custom_inputs = {}
+
+        if not custom_properties:
+            hint.setText("No custom properties found.")
+            return
+
+        hint.setText("Property names are read-only. Edit values and click Save Custom Properties.")
+        editable = bool(self._selected_document and self._selected_document.is_active)
+
+        for prop in custom_properties:
+            name = str(prop.get("name", "")).strip()
+            prop_type = str(prop.get("type", "Text") or "Text")
+            raw_value = prop.get("value", "")
+            if not name:
+                continue
+
+            label = QLabel(name)
+            label.setObjectName("metaKey")
+
+            editor: Any
+            if prop_type == "Boolean":
+                editor = QCheckBox()
+                normalized = str(raw_value).strip().lower()
+                checked = bool(raw_value) if isinstance(raw_value, bool) else normalized in {"1", "true", "yes", "y", "on"}
+                editor.setChecked(checked)
+            elif prop_type == "Number":
+                editor = QDoubleSpinBox()
+                editor.setRange(-1e12, 1e12)
+                editor.setDecimals(6)
+                try:
+                    editor.setValue(float(raw_value))
+                except Exception:
+                    editor.setValue(0.0)
+            elif prop_type == "Date":
+                editor = QDateEdit()
+                editor.setCalendarPopup(True)
+                editor.setDisplayFormat("yyyy-MM-dd")
+                editor.setDate(self._parse_date_value(raw_value))
+            else:
+                prop_type = "Text"
+                editor = QLineEdit(str(raw_value or ""))
+
+            editor.setEnabled(editable)
+            editor.setObjectName("customValueEditor")
+            form.addRow(label, editor)
+            self._draft_custom_inputs[name] = {
+                "type": prop_type,
+                "widget": editor,
+            }
+
+    def _apply_draft_custom_properties(self, payload: Dict[str, Any]) -> None:
+        selection_key = payload.get("selection_key")
+        if selection_key and selection_key != self._selection_key:
+            return
+
+        if not self._selected_document or self._selected_document.document_type != "Draft":
+            return
+
+        widgets = self.doc_panel.page_widgets.get("Draft", {})
+        form = widgets.get("custom_props_form")
+        hint = widgets.get("custom_props_hint")
+        if not isinstance(form, QFormLayout) or not isinstance(hint, QLabel):
+            return
+
+        custom_properties = payload.get("custom_properties", []) or []
+        if not isinstance(custom_properties, list):
+            custom_properties = []
+        self._build_draft_custom_property_form(custom_properties)
+
+    def _save_draft_custom_properties(self) -> None:
+        if not self._selected_document or self._selected_document.document_type != "Draft":
+            self._set_status("error", "Status: Select a Draft document first.")
+            return
+
+        if not self._selected_document.is_active:
+            self._set_status("error", "Status: Activate this Draft before editing custom properties.")
+            return
+
+        if not self._draft_custom_inputs:
+            self._set_status("error", "Status: Draft properties editor is not available.")
+            return
+
+        custom_props: List[Dict[str, Any]] = []
+        for prop_name, info in self._draft_custom_inputs.items():
+            prop_type = str(info.get("type", "Text"))
+            widget = info.get("widget")
+
+            value: Any = ""
+            if isinstance(widget, QCheckBox):
+                value = widget.isChecked()
+            elif isinstance(widget, QDoubleSpinBox):
+                value = widget.value()
+            elif isinstance(widget, QDateEdit):
+                value = widget.date().toString("yyyy-MM-dd")
+            elif isinstance(widget, QLineEdit):
+                value = widget.text().strip()
+
+            custom_props.append(
+                {
+                    "name": prop_name,
+                    "type": prop_type,
+                    "value": value,
+                }
+            )
+
+        self._set_status("processing", "Status: Saving draft custom properties...")
+        self._start_worker(
+            "save_draft_custom_properties",
+            {
+                "full_name": self._selected_document.full_name,
+                "name": self._selected_document.name,
+                "custom_properties": custom_props,
+            },
+        )
 
     def _copy_document_name(self, doc_type: str) -> None:
         widgets = self.doc_panel.page_widgets.get(doc_type, {})
@@ -411,6 +585,10 @@ class ModernCADApp(QWidget):
 
         if action_key == "activate":
             self._activate_selected_document()
+            return
+
+        if action_key == "save_custom_props":
+            self._save_draft_custom_properties()
 
     def _activate_selected_document(self) -> None:
         if not self._selected_document:
@@ -428,6 +606,21 @@ class ModernCADApp(QWidget):
         )
 
     def _on_worker_finished(self, action: str, payload: Dict[str, Any]) -> None:
+        if action == "draft_custom_properties":
+            self._apply_draft_custom_properties(payload)
+            return
+
+        if action == "save_draft_custom_properties":
+            is_success = bool(payload.get("ok", False))
+            message = str(payload.get("message", ""))
+            self._set_status("success" if is_success else "error", f"Status: {message}")
+
+            self.nav_panel.connect_btn.setEnabled(not self._connected)
+            self.nav_panel.refresh_btn.setEnabled(self._connected)
+            self.nav_panel.disconnect_btn.setEnabled(self._connected)
+            self.nav_panel.doc_list.setEnabled(self._connected and bool(self._documents))
+            return
+
         is_success = bool(payload.get("ok", False))
         message = str(payload.get("message", ""))
 

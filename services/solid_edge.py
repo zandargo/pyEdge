@@ -1,6 +1,7 @@
 import gc
 import os
-from typing import Optional, Tuple
+from datetime import date, datetime
+from typing import Any, Optional, Tuple
 
 import pythoncom
 import win32com.client
@@ -27,6 +28,26 @@ def _iter_documents(application):
     for index in range(1, count + 1):
         try:
             yield documents_collection.Item(index)
+        except Exception:
+            continue
+
+
+def _iter_com_collection(collection):
+    """Yield items from COM collections with iterator or Count/Item fallback."""
+    if collection is None:
+        return
+
+    try:
+        for item in collection:
+            yield item
+        return
+    except Exception:
+        pass
+
+    count = int(getattr(collection, "Count", 0) or 0)
+    for index in range(1, count + 1):
+        try:
+            yield collection.Item(index)
         except Exception:
             continue
 
@@ -178,6 +199,240 @@ def disconnect_from_solid_edge() -> None:
     try:
         gc.collect()
         pythoncom.CoFreeUnusedLibraries()
+    finally:
+        pythoncom.CoUninitialize()
+
+
+def _serialize_date_value(value: Any) -> str:
+    """Serialize COM date-like values to a stable yyyy-MM-dd string."""
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d")
+    if isinstance(value, date):
+        return value.strftime("%Y-%m-%d")
+
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    return text.split(" ", 1)[0].split("T", 1)[0]
+
+
+def _infer_custom_property_type(value: Any) -> str:
+    """Infer UI editor type from COM property value."""
+    if isinstance(value, bool):
+        return "Boolean"
+    if isinstance(value, (int, float)):
+        return "Number"
+    if isinstance(value, (datetime, date)):
+        return "Date"
+
+    text = str(value or "").strip()
+    if text:
+        for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"):
+            try:
+                datetime.strptime(text.split("T", 1)[0], fmt)
+                return "Date"
+            except Exception:
+                continue
+    return "Text"
+
+
+def _read_document_custom_properties(document) -> list[dict[str, Any]]:
+    """Read user custom properties with inferred value types."""
+    properties = getattr(document, "Properties", None)
+    if properties is None:
+        return []
+
+    custom_set = None
+    for prop_set in _iter_com_collection(properties):
+        set_name = str(getattr(prop_set, "Name", "")).strip().lower()
+        if "custom" in set_name:
+            custom_set = prop_set
+            break
+
+    if custom_set is None:
+        try:
+            custom_set = properties.Item("Custom")
+        except Exception:
+            custom_set = None
+
+    if custom_set is None:
+        return []
+
+    custom_props: list[dict[str, Any]] = []
+    for prop in _iter_com_collection(custom_set):
+        key = str(getattr(prop, "Name", "")).strip()
+        if not key:
+            continue
+        value = getattr(prop, "Value", "")
+        prop_type = _infer_custom_property_type(value)
+        normalized_value: Any = "" if value is None else value
+        if prop_type == "Date":
+            normalized_value = _serialize_date_value(normalized_value)
+
+        custom_props.append(
+            {
+                "name": key,
+                "type": prop_type,
+                "value": normalized_value,
+            }
+        )
+
+    custom_props.sort(key=lambda item: str(item.get("name", "")).lower())
+    return custom_props
+
+
+def _get_custom_property_set(document):
+    """Return the custom property set COM object for a document, if available."""
+    properties = getattr(document, "Properties", None)
+    if properties is None:
+        return None
+
+    for prop_set in _iter_com_collection(properties):
+        set_name = str(getattr(prop_set, "Name", "")).strip().lower()
+        if "custom" in set_name:
+            return prop_set
+
+    try:
+        return properties.Item("Custom")
+    except Exception:
+        return None
+
+
+def get_draft_custom_properties(target_full_name: Optional[str], target_name: Optional[str] = None) -> list[dict[str, Any]]:
+    """Return custom properties for a selected Draft document by path/name."""
+    pythoncom.CoInitialize()
+    try:
+        application = win32com.client.GetActiveObject("SolidEdge.Application")
+        wanted_full = _path_key(target_full_name)
+        wanted_name = str(target_name or "").strip().lower()
+
+        for document in _iter_documents(application):
+            try:
+                full_name = _path_key(getattr(document, "FullName", ""))
+                name = str(getattr(document, "Name", "")).strip().lower()
+                doc_type = _resolve_document_type(document, full_name, name)
+
+                if doc_type != "Draft":
+                    continue
+
+                matches_full = bool(wanted_full and full_name and full_name == wanted_full)
+                matches_name = bool(not wanted_full and wanted_name and name == wanted_name)
+                if not (matches_full or matches_name):
+                    continue
+
+                custom_props = _read_document_custom_properties(document)
+                del document
+                del application
+                gc.collect()
+                pythoncom.CoFreeUnusedLibraries()
+                return custom_props
+            finally:
+                try:
+                    del document
+                except Exception:
+                    pass
+
+        del application
+        gc.collect()
+        pythoncom.CoFreeUnusedLibraries()
+        return []
+    finally:
+        pythoncom.CoUninitialize()
+
+
+def _coerce_custom_property_value(raw_value: Any, prop_type: str) -> Any:
+    """Convert UI values back to COM-compatible primitive values."""
+    if prop_type == "Boolean":
+        if isinstance(raw_value, bool):
+            return raw_value
+        return str(raw_value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+    if prop_type == "Number":
+        try:
+            return float(raw_value)
+        except Exception:
+            return 0.0
+
+    if prop_type == "Date":
+        if isinstance(raw_value, (datetime, date)):
+            return raw_value
+        text = str(raw_value or "").strip()
+        if not text:
+            return ""
+        for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(text, fmt)
+            except Exception:
+                continue
+        return text
+
+    return "" if raw_value is None else str(raw_value)
+
+
+def set_active_draft_custom_properties(
+    target_full_name: Optional[str],
+    target_name: Optional[str],
+    custom_properties: list[dict[str, Any]],
+) -> bool:
+    """Update custom properties only when the selected Draft is currently active."""
+    pythoncom.CoInitialize()
+    try:
+        application = win32com.client.GetActiveObject("SolidEdge.Application")
+        active_document = getattr(application, "ActiveDocument", None)
+
+        active_full_name = _path_key(getattr(active_document, "FullName", ""))
+        active_name = str(getattr(active_document, "Name", "")).strip().lower()
+        wanted_full = _path_key(target_full_name)
+        wanted_name = str(target_name or "").strip().lower()
+
+        for document in _iter_documents(application):
+            try:
+                full_name = _path_key(getattr(document, "FullName", ""))
+                name = str(getattr(document, "Name", "")).strip().lower()
+                doc_type = _resolve_document_type(document, full_name, name)
+
+                matches_full = bool(wanted_full and full_name and full_name == wanted_full)
+                matches_name = bool(not wanted_full and wanted_name and name == wanted_name)
+                is_active = bool((active_full_name and full_name == active_full_name) or (active_name and name == active_name))
+
+                if doc_type != "Draft" or not (matches_full or matches_name) or not is_active:
+                    continue
+
+                custom_set = _get_custom_property_set(document)
+                if custom_set is None:
+                    return False
+
+                for entry in custom_properties:
+                    clean_key = str(entry.get("name", "")).strip()
+                    if not clean_key:
+                        continue
+
+                    prop_type = str(entry.get("type", "Text") or "Text")
+                    raw_value = entry.get("value", "")
+                    typed_value = _coerce_custom_property_value(raw_value, prop_type)
+                    try:
+                        prop = custom_set.Item(clean_key)
+                        prop.Value = typed_value
+                    except Exception:
+                        custom_set.Add(clean_key, typed_value)
+
+                del document
+                del active_document
+                del application
+                gc.collect()
+                pythoncom.CoFreeUnusedLibraries()
+                return True
+            finally:
+                try:
+                    del document
+                except Exception:
+                    pass
+
+        del active_document
+        del application
+        gc.collect()
+        pythoncom.CoFreeUnusedLibraries()
+        return False
     finally:
         pythoncom.CoUninitialize()
 

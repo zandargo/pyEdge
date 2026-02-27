@@ -194,6 +194,11 @@ QLabel#metaKey {
     font-size: 12px;
     font-weight: 700;
 }
+QLabel#customPropsTitle {
+    color: #d6e7ff;
+    font-size: 15px;
+    font-weight: 700;
+}
 QLabel#metaValue {
     color: #dde8ff;
     font-size: 13px;
@@ -202,6 +207,34 @@ QLabel#metaValue {
     border: 1px solid rgba(255, 255, 255, 14);
     border-radius: 8px;
     padding: 8px;
+}
+QLineEdit#customValueEditor,
+QDateEdit#customValueEditor,
+QDoubleSpinBox#customValueEditor {
+    color: #dde8ff;
+    background-color: rgba(255, 255, 255, 76);
+    border: 1px solid rgba(183, 213, 255, 110);
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+QLineEdit#customValueEditor:disabled,
+QDateEdit#customValueEditor:disabled,
+QDoubleSpinBox#customValueEditor:disabled {
+    color: #9ba9c0;
+    background-color: rgba(255, 255, 255, 16);
+}
+QCheckBox#customValueEditor {
+    color: #dde8ff;
+}
+QCheckBox#customValueEditor:disabled {
+    color: #9ba9c0;
+}
+QScrollArea#customPropsScroll {
+    background: transparent;
+    border: none;
+}
+QScrollArea#customPropsScroll > QWidget > QWidget {
+    background: transparent;
 }
 QPushButton#primaryButton {
     border-radius: 10px;

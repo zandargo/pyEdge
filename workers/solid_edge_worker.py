@@ -11,15 +11,19 @@ from services.solid_edge import (
     activate_document_by_full_name,
     diagnose_solid_edge_connection,
     disconnect_from_solid_edge,
+    get_draft_custom_properties,
     get_open_documents,
+    set_active_draft_custom_properties,
 )
 
 
-class WorkerPayload(TypedDict):
+class WorkerPayload(TypedDict, total=False):
     ok: bool
     message: str
     documents: List[DocumentInfo]
     active_name: Optional[str]
+    custom_properties: List[Dict[str, Any]]
+    selection_key: Optional[str]
 
 
 class SolidEdgeWorker(QThread):
@@ -44,6 +48,14 @@ class SolidEdgeWorker(QThread):
 
         if self.action == "activate":
             self._handle_activate()
+            return
+
+        if self.action == "draft_custom_properties":
+            self._handle_draft_custom_properties()
+            return
+
+        if self.action == "save_draft_custom_properties":
+            self._handle_save_draft_custom_properties()
             return
 
     def _handle_connect_or_refresh(self) -> None:
@@ -151,3 +163,53 @@ class SolidEdgeWorker(QThread):
                 "activate",
                 payload,
             )
+
+    def _handle_draft_custom_properties(self) -> None:
+        try:
+            full_name = self.payload.get("full_name")
+            name = self.payload.get("name")
+            selection_key = self.payload.get("selection_key")
+
+            custom_properties = get_draft_custom_properties(full_name, name)
+            payload: WorkerPayload = {
+                "ok": True,
+                "message": "Loaded draft custom properties.",
+                "documents": [],
+                "active_name": None,
+                "custom_properties": custom_properties,
+                "selection_key": selection_key,
+            }
+            self.finished.emit("draft_custom_properties", payload)
+        except Exception:
+            payload: WorkerPayload = {
+                "ok": False,
+                "message": "Failed to load draft custom properties.",
+                "documents": [],
+                "active_name": None,
+                "custom_properties": {},
+                "selection_key": self.payload.get("selection_key"),
+            }
+            self.finished.emit("draft_custom_properties", payload)
+
+    def _handle_save_draft_custom_properties(self) -> None:
+        try:
+            full_name = self.payload.get("full_name")
+            name = self.payload.get("name")
+            properties = self.payload.get("custom_properties") or []
+
+            saved = set_active_draft_custom_properties(full_name, name, properties)
+            payload: WorkerPayload = {
+                "ok": bool(saved),
+                "message": "Draft custom properties saved." if saved else "Draft must be active to save custom properties.",
+                "documents": [],
+                "active_name": None,
+            }
+            self.finished.emit("save_draft_custom_properties", payload)
+        except Exception:
+            payload: WorkerPayload = {
+                "ok": False,
+                "message": "Failed to save draft custom properties.",
+                "documents": [],
+                "active_name": None,
+            }
+            self.finished.emit("save_draft_custom_properties", payload)
