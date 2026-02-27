@@ -164,13 +164,6 @@ QLabel#mainTitle {
     font-size: 24px;
     font-weight: 700;
 }
-QLabel#status {
-    font-size: 13px;
-    font-weight: 600;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 10);
-}
 QLabel#connection {
     font-size: 13px;
     font-weight: 600;

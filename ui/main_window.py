@@ -48,6 +48,7 @@ class ModernCADApp(QWidget):
         self._selected_document: Optional[DocumentInfo] = None
         self._selection_key: Optional[str] = None
         self._preferred_selection_key: Optional[str] = None
+        self._status_message: str = ""
         self.worker: Optional[SolidEdgeWorker] = None
 
         from qfluentwidgets import BodyLabel, PrimaryPushButton, PushButton, SubtitleLabel, Theme, setTheme
@@ -238,18 +239,8 @@ class ModernCADApp(QWidget):
         return QIcon(pixmap)
 
     def _set_status(self, state: str, message: str) -> None:
-        colors = {
-            "ready": "#8da0bf",
-            "processing": "#fbbf24",
-            "success": "#34d399",
-            "error": "#f87171",
-        }
-        self.doc_panel.status_label.setText(message)
-        self.doc_panel.status_label.setStyleSheet(
-            f"color: {colors.get(state, '#8da0bf')};"
-            "background-color: rgba(255, 255, 255, 10);"
-            "border: 1px solid rgba(255, 255, 255, 18);"
-        )
+        # Keep status text available for potential diagnostics without a visible status card.
+        self._status_message = f"{state}: {message}"
 
     def _set_connection_indicator(self) -> None:
         if self._connected:

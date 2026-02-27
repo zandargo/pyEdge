@@ -24,9 +24,6 @@ class DocumentPanel(QFrame):
         self.main_title = SubtitleLabel("Document Workspace")
         self.main_title.setObjectName("mainTitle")
 
-        self.status_label = BodyLabel("")
-        self.status_label.setObjectName("status")
-
         self.connection_label = BodyLabel("")
         self.connection_label.setObjectName("connection")
 
@@ -43,7 +40,6 @@ class DocumentPanel(QFrame):
 
         layout.addWidget(self.main_title)
         layout.addWidget(self.connection_label)
-        layout.addWidget(self.status_label)
         layout.addSpacing(4)
         layout.addWidget(self.doc_stack, 1)
 
