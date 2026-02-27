@@ -81,6 +81,17 @@ python main.py
 pyEdge/
 |-- app_ui.py
 |-- main.py
+|-- models/
+|   `-- document_info.py
+|-- ui/
+|   |-- components/
+|   |   |-- document_panel.py
+|   |   |-- navigation_panel.py
+|   |   `-- title_bar.py
+|   |-- main_window.py
+|   `-- styles.py
+|-- workers/
+|   `-- solid_edge_worker.py
 |-- requirements.txt
 |-- services/
 |   `-- solid_edge.py
@@ -90,8 +101,13 @@ pyEdge/
 ## How It Works 🔍
 
 - `main.py`: starts the Qt app and opens the main window.
-- `app_ui.py`: renders UI and launches a worker for the Solid Edge check.
-- `services/solid_edge.py`: connects to `SolidEdge.Application` and reads `ActiveDocument.Name`.
+- `ui/main_window.py`: top-level window orchestration and interaction flow.
+- `ui/components/*`: reusable UI building blocks (title bar, nav panel, document panel).
+- `ui/styles.py`: centralized Qt stylesheet.
+- `workers/solid_edge_worker.py`: background COM operations.
+- `models/document_info.py`: typed document model shared across layers.
+- `services/solid_edge.py`: Solid Edge COM access and document operations.
+- `app_ui.py`: compatibility shim for old imports.
 
 ## Troubleshooting 🛠️
 
