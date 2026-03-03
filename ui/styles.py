@@ -396,22 +396,22 @@ QPushButton#printSearchBtn:disabled {
     border-color: rgba(45, 140, 255, 70);
 }
 QPushButton#printSecondaryBtn {
-    background-color: rgba(255, 255, 255, 10);
-    color: #9fb8d8;
-    border: 1px solid rgba(255, 255, 255, 16);
+    background-color: rgba(45, 140, 255, 120);
+    color: #ffffff;
+    border: 1px solid rgba(45, 140, 255, 160);
     border-radius: 7px;
     font-size: 12px;
     font-weight: 600;
     padding: 2px 10px;
 }
 QPushButton#printSecondaryBtn:hover {
-    background-color: rgba(255, 255, 255, 18);
-    color: #d0dff5;
+    background-color: rgba(45, 140, 255, 180);
+    color: #ffffff;
 }
 QPushButton#printBtn {
-    background-color: #2d8cff;
+    background-color: #7db8ff;
     color: #ffffff;
-    border: none;
+    border: 1px solid rgba(45, 140, 255, 200);
     border-radius: 10px;
     font-size: 14px;
     font-weight: 700;
@@ -419,11 +419,12 @@ QPushButton#printBtn {
     padding-right: 6px;
 }
 QPushButton#printBtn:hover {
-    background-color: #58a4ff;
+    background-color: #a5ceff;
 }
 QPushButton#printBtn:disabled {
     background-color: rgba(45, 140, 255, 55);
     color: rgba(255, 255, 255, 90);
+    border-color: rgba(45, 140, 255, 80);
 }
 QListWidget#printResults {
     background-color: rgba(255, 255, 255, 6);
