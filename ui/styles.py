@@ -257,4 +257,47 @@ QPushButton#secondaryButton:disabled {
     background-color: rgba(255, 255, 255, 8);
     border-color: rgba(255, 255, 255, 14);
 }
+QWidget#tabBarContainer {
+    background-color: rgba(7, 11, 18, 200);
+    border-bottom: 1px solid rgba(255, 255, 255, 14);
+}
+QPushButton#tabButton {
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #7a90b0;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0px 22px;
+    border-radius: 0px;
+    letter-spacing: 0.2px;
+}
+QPushButton#tabButton:checked {
+    color: #e8f0ff;
+    border-bottom: 3px solid #2d8cff;
+}
+QPushButton#tabButton:hover:!checked {
+    color: #b0c4de;
+    background-color: rgba(255, 255, 255, 6);
+}
+QPushButton#utilNavButton {
+    text-align: left;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background-color: rgba(45, 140, 255, 55);
+    color: #e8f0ff;
+    font-size: 13px;
+    font-weight: 600;
+}
+QPushButton#utilNavButton:checked {
+    background-color: rgba(45, 140, 255, 80);
+    border: 1px solid rgba(45, 140, 255, 120);
+    color: #ffffff;
+}
+QPushButton#utilNavButton:hover:!checked {
+    background-color: rgba(255, 255, 255, 12);
+    border: 1px solid rgba(255, 255, 255, 16);
+    color: #d0dcf5;
+}
 """

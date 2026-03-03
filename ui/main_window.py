@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import (
 
 from models import DocumentInfo
 from services.solid_edge import disconnect_from_solid_edge
-from ui.components import DocumentPanel, NavigationPanel, TitleBar
+from ui.components import DocumentPanel, NavigationPanel, TitleBar, UtilitiesNavPanel
 from ui.styles import APP_STYLESHEET
 from workers import SolidEdgeWorker
 
@@ -122,7 +122,7 @@ class ModernCADApp(QWidget):
         outer.setContentsMargins(10, 10, 10, 10)
         outer.setSpacing(0)
 
-        from PyQt5.QtWidgets import QFrame, QGraphicsOpacityEffect, QHBoxLayout, QWidget as QtWidget
+        from PyQt5.QtWidgets import QButtonGroup, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QPushButton as QtPushButton, QStackedWidget, QWidget as QtWidget
 
         self.window_frame = QFrame(self)
         self.window_frame.setObjectName("windowFrame")
@@ -141,14 +141,47 @@ class ModernCADApp(QWidget):
         self.title_bar.window_title_label.installEventFilter(self)
         frame_layout.addWidget(self.title_bar)
 
-        self.workspace_container = QtWidget(self.window_frame)
+        # --- Tab bar ---
+        tab_bar = QtWidget(self.window_frame)
+        tab_bar.setObjectName("tabBarContainer")
+        tab_bar_layout = QHBoxLayout(tab_bar)
+        tab_bar_layout.setContentsMargins(20, 0, 20, 0)
+        tab_bar_layout.setSpacing(0)
+
+        self.tab_files = QtPushButton("Files")
+        self.tab_files.setObjectName("tabButton")
+        self.tab_files.setCheckable(True)
+        self.tab_files.setChecked(True)
+        self.tab_files.setFixedHeight(40)
+
+        self.tab_utilities = QtPushButton("Utilities")
+        self.tab_utilities.setObjectName("tabButton")
+        self.tab_utilities.setCheckable(True)
+        self.tab_utilities.setChecked(False)
+        self.tab_utilities.setFixedHeight(40)
+
+        self._tab_group = QButtonGroup(self)
+        self._tab_group.setExclusive(True)
+        self._tab_group.addButton(self.tab_files, 0)
+        self._tab_group.addButton(self.tab_utilities, 1)
+
+        tab_bar_layout.addWidget(self.tab_files)
+        tab_bar_layout.addWidget(self.tab_utilities)
+        tab_bar_layout.addStretch(1)
+        frame_layout.addWidget(tab_bar)
+
+        # --- Content stack ---
+        self.content_stack = QStackedWidget(self.window_frame)
+
+        self._workspace_opacity = QGraphicsOpacityEffect(self.content_stack)
+        self._workspace_opacity.setOpacity(0.0)
+        self.content_stack.setGraphicsEffect(self._workspace_opacity)
+
+        # Files workspace (index 0)
+        self.workspace_container = QtWidget()
         workspace_layout = QHBoxLayout(self.workspace_container)
         workspace_layout.setContentsMargins(20, 20, 20, 20)
         workspace_layout.setSpacing(18)
-
-        self._workspace_opacity = QGraphicsOpacityEffect(self.workspace_container)
-        self._workspace_opacity.setOpacity(0.0)
-        self.workspace_container.setGraphicsEffect(self._workspace_opacity)
 
         self.nav_panel = NavigationPanel(SubtitleLabel, BodyLabel, PrimaryPushButton, PushButton, self.workspace_container)
         button_font = self.nav_panel.connect_btn.font()
@@ -160,11 +193,49 @@ class ModernCADApp(QWidget):
 
         workspace_layout.addWidget(self.nav_panel)
         workspace_layout.addWidget(self.doc_panel, 1)
+        self.content_stack.addWidget(self.workspace_container)
 
-        frame_layout.addWidget(self.workspace_container, 1)
+        # Utilities workspace (index 1)
+        self.utilities_container = QtWidget()
+        utilities_layout = QHBoxLayout(self.utilities_container)
+        utilities_layout.setContentsMargins(20, 20, 20, 20)
+        utilities_layout.setSpacing(18)
+
+        self.utilities_nav_panel = UtilitiesNavPanel(SubtitleLabel, BodyLabel, PushButton, self.utilities_container)
+        self.printing_main = self._build_printing_placeholder(BodyLabel, SubtitleLabel)
+
+        utilities_layout.addWidget(self.utilities_nav_panel)
+        utilities_layout.addWidget(self.printing_main, 1)
+        self.content_stack.addWidget(self.utilities_container)
+
+        frame_layout.addWidget(self.content_stack, 1)
+
+        self.tab_files.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
+        self.tab_utilities.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
 
         self.setStyleSheet(APP_STYLESHEET)
         self._update_window_chrome()
+
+    def _build_printing_placeholder(self, BodyLabel: Any, SubtitleLabel: Any) -> Any:
+        from PyQt5.QtWidgets import QFrame, QVBoxLayout as VBox
+        frame = QFrame()
+        frame.setObjectName("mainPanel")
+        layout = VBox(frame)
+        layout.setContentsMargins(28, 28, 28, 28)
+        layout.setSpacing(10)
+
+        title = SubtitleLabel("Printing")
+        title.setObjectName("mainTitle")
+
+        subtitle = BodyLabel("Configure and execute batch print jobs for Solid Edge documents.")
+        subtitle.setObjectName("pageSubtitle")
+        subtitle.setWordWrap(True)
+
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
+        layout.addStretch(1)
+
+        return frame
 
     def _wire_document_actions(self) -> None:
         for doc_type, buttons in self.doc_panel.action_buttons.items():
@@ -175,9 +246,9 @@ class ModernCADApp(QWidget):
                 )
 
     def _start_entry_animation(self) -> None:
-        start_pos = self.workspace_container.pos() + QPoint(0, 14)
-        end_pos = self.workspace_container.pos()
-        self.workspace_container.move(start_pos)
+        start_pos = self.content_stack.pos() + QPoint(0, 14)
+        end_pos = self.content_stack.pos()
+        self.content_stack.move(start_pos)
 
         fade = QPropertyAnimation(self._workspace_opacity, b"opacity", self)
         fade.setDuration(340)
@@ -185,7 +256,7 @@ class ModernCADApp(QWidget):
         fade.setEndValue(1.0)
         fade.setEasingCurve(QEasingCurve.OutCubic)
 
-        slide = QPropertyAnimation(self.workspace_container, b"pos", self)
+        slide = QPropertyAnimation(self.content_stack, b"pos", self)
         slide.setDuration(360)
         slide.setStartValue(start_pos)
         slide.setEndValue(end_pos)
