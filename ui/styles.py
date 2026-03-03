@@ -36,37 +36,37 @@ QLabel#windowTitle {
     font-weight: 600;
     letter-spacing: 0.4px;
 }
+/* Fluent Design window control buttons */
 QToolButton#minBtn,
-QToolButton#maxBtn {
-    color: #ffffff;
+QToolButton#maxBtn,
+QToolButton#closeBtn {
     background-color: transparent;
     border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    font-family: "Segoe UI";
-}
-QToolButton#minBtn {
-    font-size: 18px;
-    padding-bottom: 3px;
-}
-QToolButton#maxBtn {
-    font-size: 14px;
+    border-radius: 6px;
+    padding: 0px;
 }
 QToolButton#minBtn:hover,
 QToolButton#maxBtn:hover {
-    background-color: rgba(255, 255, 255, 16);
+    background-color: rgba(255, 255, 255, 0.08);
 }
-QToolButton#closeBtn {
-    color: #ffffff;
-    background-color: transparent;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    font-family: "Segoe UI";
+QToolButton#minBtn:pressed,
+QToolButton#maxBtn:pressed {
+    background-color: rgba(255, 255, 255, 0.12);
 }
 QToolButton#closeBtn:hover {
-    background-color: rgba(235, 77, 75, 220);
+    background-color: rgba(255, 76, 56, 0.9);
+}
+QToolButton#closeBtn:pressed {
+    background-color: rgba(255, 56, 40, 1.0);
+}
+/* Support for qfluentwidgets ToolButton styling */
+ToolButton#minBtn,
+ToolButton#maxBtn,
+ToolButton#closeBtn {
+    border-radius: 6px;
+}
+ToolButton#closeBtn:hover {
+    background-color: rgba(255, 76, 56, 0.9);
 }
 QFrame#navPanel {
     background-color: rgba(14, 20, 30, 220);

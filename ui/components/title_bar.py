@@ -1,12 +1,13 @@
-"""Custom frameless title bar component."""
+"""Custom frameless title bar component with vector icons."""
 
+from pathlib import Path
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton
 
 
 class TitleBar(QFrame):
-    """Reusable title bar with window control buttons."""
+    """Reusable title bar with window control buttons using vector icons."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -24,19 +25,34 @@ class TitleBar(QFrame):
         self.window_title_label = QLabel("pyEdge", self)
         self.window_title_label.setObjectName("windowTitle")
 
+        # Load vector icons from SVG files
+        icons_dir = Path(__file__).parent.parent.parent / "assets" / "icons"
+        minimize_icon = QIcon(str(icons_dir / "minimize.svg"))
+        maximize_icon = QIcon(str(icons_dir / "maximize.svg"))
+        close_icon = QIcon(str(icons_dir / "close.svg"))
+
+        # Create window control buttons with vector icons
         self.min_btn = QToolButton(self)
         self.min_btn.setObjectName("minBtn")
+        self.min_btn.setIcon(minimize_icon)
         self.min_btn.setFixedSize(42, 30)
+        self.min_btn.setIconSize(QSize(16, 16))
         self.min_btn.setToolTip("Minimize")
 
         self.max_btn = QToolButton(self)
         self.max_btn.setObjectName("maxBtn")
+        self.max_btn.setIcon(maximize_icon)
+        self._maximize_icon = maximize_icon
+        self._restore_icon = QIcon(str(icons_dir / "restore.svg"))
         self.max_btn.setFixedSize(42, 30)
+        self.max_btn.setIconSize(QSize(16, 16))
+        self.max_btn.setToolTip("Maximize")
 
         self.close_btn = QToolButton(self)
         self.close_btn.setObjectName("closeBtn")
+        self.close_btn.setIcon(close_icon)
         self.close_btn.setFixedSize(42, 30)
-        self.close_btn.setIconSize(QSize(12, 12))
+        self.close_btn.setIconSize(QSize(16, 16))
         self.close_btn.setToolTip("Close")
 
         layout.addWidget(self.window_icon_label)
@@ -45,6 +61,13 @@ class TitleBar(QFrame):
         layout.addWidget(self.min_btn)
         layout.addWidget(self.max_btn)
         layout.addWidget(self.close_btn)
+
+    def set_maximize_state(self, is_maximized: bool) -> None:
+        """Update the maximize button icon based on window state."""
+        if is_maximized:
+            self.max_btn.setIcon(self._restore_icon)
+        else:
+            self.max_btn.setIcon(self._maximize_icon)
 
     def set_app_icon(self, icon: QIcon) -> None:
         """Render the provided window icon in the custom title bar."""

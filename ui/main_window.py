@@ -16,7 +16,7 @@ from PyQt5.QtCore import (
     Qt,
     QTimer,
 )
-from PyQt5.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
+from PyQt5.QtGui import QColor, QIcon, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -332,35 +332,12 @@ class ModernCADApp(QWidget):
         self.window_frame.update()
 
     def _update_titlebar_icons(self) -> None:
-        self.title_bar.min_btn.setText("_")
-        self.title_bar.close_btn.setText("")
-        self.title_bar.close_btn.setIcon(self._build_close_icon())
-
+        """Update titlebar icons based on window state."""
+        self.title_bar.set_maximize_state(self.isMaximized())
         if self.isMaximized():
-            self.title_bar.max_btn.setText("[]")
             self.title_bar.max_btn.setToolTip("Restore")
         else:
-            self.title_bar.max_btn.setText("[ ]")
             self.title_bar.max_btn.setToolTip("Maximize")
-
-    def _build_close_icon(self) -> QIcon:
-        size = 12
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.transparent)
-
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.Antialiasing, True)
-        pen = QPen(Qt.white)
-        pen.setWidthF(1.6)
-        pen.setCapStyle(Qt.RoundCap)
-        painter.setPen(pen)
-
-        margin = 2.3
-        painter.drawLine(QPoint(int(margin), int(margin)), QPoint(int(size - margin), int(size - margin)))
-        painter.drawLine(QPoint(int(size - margin), int(margin)), QPoint(int(margin), int(size - margin)))
-        painter.end()
-
-        return QIcon(pixmap)
 
     def _set_status(self, state: str, message: str) -> None:
         # Keep status text available for potential diagnostics without a visible status card.
