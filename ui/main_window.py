@@ -92,6 +92,12 @@ class ModernCADApp(QWidget):
             self._update_window_chrome()
         super().changeEvent(event)
 
+    def setWindowIcon(self, icon: QIcon) -> None:
+        """Keep the native window icon and custom title bar icon in sync."""
+        super().setWindowIcon(icon)
+        if hasattr(self, "title_bar"):
+            self.title_bar.set_app_icon(icon)
+
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if obj in (self.title_bar, self.title_bar.window_title_label):
             if event.type() == QEvent.MouseButtonDblClick and hasattr(event, "button") and event.button() == Qt.LeftButton:
