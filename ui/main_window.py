@@ -135,7 +135,6 @@ class ModernCADApp(QWidget):
 
         self.window_frame = QFrame(self)
         self.window_frame.setObjectName("windowFrame")
-        self.window_frame.setProperty("maximized", False)
 
         frame_layout = QVBoxLayout(self.window_frame)
         frame_layout.setContentsMargins(0, 0, 0, 0)
@@ -320,14 +319,16 @@ class ModernCADApp(QWidget):
 
     def _update_window_chrome(self) -> None:
         is_maximized = self.isMaximized()
-        self.window_frame.setProperty("maximized", is_maximized)
 
         margin = 0 if is_maximized else 10
         self.layout().setContentsMargins(margin, margin, margin, margin)
 
-        style = self.window_frame.style()
-        style.unpolish(self.window_frame)
-        style.polish(self.window_frame)
+        r = 0 if is_maximized else 16
+        self.window_frame.setStyleSheet(
+            f"QFrame#windowFrame {{ border-radius: {r}px; }}"
+            f"QFrame#titleBar {{ border-top-left-radius: {r}px; border-top-right-radius: {r}px; }}"
+        )
+
         self._update_titlebar_icons()
         self.window_frame.update()
 
