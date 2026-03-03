@@ -437,6 +437,37 @@ def set_active_draft_custom_properties(
         pythoncom.CoUninitialize()
 
 
+def _get_draft_orientation_flag(doc) -> int:
+    """Detect orientation for Solid Edge's DraftPrintUtility (1=Landscape, 0=Portrait).
+
+    Follows the convention: if the background sheet name contains 'Wide' or 
+    the sheet width > height, it enforces landscape.
+    """
+    try:
+        sheet = getattr(doc, "ActiveSheet", None)
+        if sheet is None:
+            sheets = getattr(doc, "Sheets", None)
+            if sheets is not None and int(getattr(sheets, "Count", 0) or 0) > 0:
+                sheet = sheets.Item(1)
+        if sheet is not None:
+            # Check by physical dimensions
+            setup = getattr(sheet, "SheetSetup", None)
+            w = float(getattr(setup, "SheetWidth", 0) or 0)
+            h = float(getattr(setup, "SheetHeight", 0) or 0)
+            
+            # Check by background name as explicit user hint
+            bg = getattr(sheet, "Background", None)
+            bg_name = str(getattr(bg, "Name", "") or "").lower()
+
+            if "wide" in bg_name or w > h:
+                return 1  # Landscape
+            if "tall" in bg_name or h > w:
+                return 0  # Portrait
+    except Exception:
+        pass
+    return 1  # Default to landscape/auto-orient
+
+
 def print_draft_file(
     path: str,
     printer: str = "",
@@ -481,6 +512,12 @@ def print_draft_file(
             doc = app.Documents.Open(path)
             opened_by_us = True
 
+        # Activate so SE's PrintOut uses the document's own context.
+        try:
+            doc.Activate()
+        except Exception:
+            pass
+
         # Update custom property before printing.
         if prop_name and prop_value:
             custom_set = _get_custom_property_set(doc)
@@ -498,8 +535,33 @@ def print_draft_file(
                 except Exception:
                     pass
 
-        for _ in range(max(1, copies)):
-            doc.PrintOut()
+        # Use Solid Edge's built-in print utility instead of doc.PrintOut() or DEVMODE manipulation
+        try:
+            utility = app.GetDraftPrintUtility()
+            utility.RemoveAllDocuments()
+            
+            # Print only the currently active sheet
+            sheet = getattr(doc, "ActiveSheet", None)
+            if sheet is not None:
+                utility.AddSheet(sheet)
+            else:
+                utility.AddDocument(doc)
+                
+            if printer:
+                try:
+                    utility.Printer = printer
+                except Exception:
+                    pass
+                
+            utility.Copies = max(1, copies)
+            utility.AutoOrient = True
+            utility.Orientation = _get_draft_orientation_flag(doc)
+            
+            utility.PrintOut()
+        except Exception:
+            # Absolute fallback
+            for _ in range(max(1, copies)):
+                doc.PrintOut()
 
     finally:
         if original_printer is not None:
