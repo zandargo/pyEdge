@@ -16,9 +16,17 @@ QFrame#windowFrame {
     );
     border: 1px solid rgba(255, 255, 255, 20);
     border-radius: 16px;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
 }
 QFrame#windowFrame[maximized="true"] {
     border-radius: 0px;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
 }
 QFrame#titleBar {
     background-color: rgba(7, 11, 18, 220);
