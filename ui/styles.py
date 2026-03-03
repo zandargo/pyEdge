@@ -1,6 +1,15 @@
 """Centralized Qt stylesheet for the pyEdge main window."""
 
 APP_STYLESHEET = """
+/* Global font rendering optimization for anti-aliasing */
+* {
+    outline: none;
+}
+
+QLabel, QPushButton, QToolButton {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+}
+
 QWidget#root {
     background: transparent;
 }
@@ -25,7 +34,7 @@ QFrame#titleBar {
 }
 QLabel#windowTitle {
     color: #cfd7e6;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     letter-spacing: 0.4px;
 }
@@ -68,16 +77,18 @@ QFrame#navPanel {
 }
 QLabel#navTitle {
     color: #e7eefb;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
+    letter-spacing: 0.3px;
 }
 QLabel#navSubtitle {
     color: #9fb0cb;
-    font-size: 13px;
+    font-size: 14px;
+    letter-spacing: 0.2px;
 }
 QLabel#docCount {
     color: #7cb6ff;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
 }
 QListWidget#docList {
@@ -154,17 +165,19 @@ QFrame#mainPanel {
 }
 QLabel#mainTitle {
     color: #eef4ff;
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
+    letter-spacing: 0.2px;
 }
 QLabel#connection {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     padding: 8px 12px;
     border-radius: 10px;
     color: #8da0bf;
     background-color: rgba(255, 255, 255, 8);
     border: 1px solid rgba(255, 255, 255, 14);
+    letter-spacing: 0.1px;
 }
 QFrame#docPage,
 QFrame#emptyPage {
@@ -174,27 +187,29 @@ QFrame#emptyPage {
 }
 QLabel#pageTitle {
     color: #f2f7ff;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
+    letter-spacing: 0.2px;
 }
 QLabel#pageSubtitle {
     color: #a2b2cd;
-    font-size: 13px;
+    font-size: 14px;
     margin-bottom: 8px;
+    letter-spacing: 0.1px;
 }
 QLabel#metaKey {
     color: #89a0c4;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
 }
 QLabel#customPropsTitle {
     color: #d6e7ff;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
 }
 QLabel#metaValue {
     color: #dde8ff;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     background-color: rgba(255, 255, 255, 8);
     border: 1px solid rgba(255, 255, 255, 14);
@@ -259,7 +274,7 @@ QPushButton#tabButton {
     border: none;
     border-bottom: 3px solid transparent;
     color: #7a90b0;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     padding: 0px 22px;
     border-radius: 0px;
@@ -280,7 +295,7 @@ QPushButton#utilNavButton {
     border: 1px solid transparent;
     background-color: rgba(45, 140, 255, 55);
     color: #e8f0ff;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
 }
 QPushButton#utilNavButton:checked {
@@ -302,16 +317,16 @@ QFrame#printCard {
 }
 QLabel#printSectionLabel {
     color: #c4d4f0;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.3px;
 }
 QLabel#printFieldLabel {
     color: #7a91b8;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
 }
 QComboBox#printCombo {
     color: #dde8ff;
@@ -378,7 +393,7 @@ QPushButton#printSearchBtn {
     border: 1px solid rgba(45, 140, 255, 190);
     border-radius: 8px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 14px;
 }
 QPushButton#printSearchBtn:hover {
     background-color: rgba(45, 140, 255, 210);
@@ -393,7 +408,7 @@ QPushButton#printSecondaryBtn {
     color: #ffffff;
     border: 1px solid rgba(45, 140, 255, 160);
     border-radius: 7px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     padding: 2px 10px;
 }
@@ -406,7 +421,7 @@ QPushButton#printBtn {
     color: #ffffff;
     border: 1px solid rgba(45, 140, 255, 200);
     border-radius: 10px;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.3px;
     padding-right: 6px;
@@ -452,14 +467,14 @@ QFrame#printDeepBar {
 }
 QLabel#printDeepIcon {
     color: #eab308;
-    font-size: 15px;
+    font-size: 16px;
 }
 QLabel#printDeepMsg {
     color: #c9b86c;
-    font-size: 13px;
+    font-size: 14px;
 }
 QLabel#printStatus {
     color: #7a91b8;
-    font-size: 13px;
+    font-size: 14px;
 }
 """

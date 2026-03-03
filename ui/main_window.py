@@ -16,7 +16,7 @@ from PyQt5.QtCore import (
     Qt,
     QTimer,
 )
-from PyQt5.QtGui import QColor, QIcon, QPixmap
+from PyQt5.QtGui import QColor, QFont, QIcon, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -195,6 +195,7 @@ class ModernCADApp(QWidget):
         button_font = self.nav_panel.connect_btn.font()
         button_font.setPointSize(10)
         button_font.setBold(True)
+        button_font.setStyleStrategy(QFont.PreferAntialias)
         self.nav_panel.connect_btn.setFont(button_font)
 
         self.doc_panel = DocumentPanel(SubtitleLabel, BodyLabel, PushButton, self.workspace_container)
