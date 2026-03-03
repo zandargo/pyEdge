@@ -32,9 +32,9 @@ from PyQt5.QtWidgets import (
 
 from models import DocumentInfo
 from services.solid_edge import disconnect_from_solid_edge
-from ui.components import DocumentPanel, NavigationPanel, TitleBar, UtilitiesNavPanel
+from ui.components import DocumentPanel, NavigationPanel, TitleBar, UtilitiesNavPanel, PrintingPanel
 from ui.styles import APP_STYLESHEET
-from workers import SolidEdgeWorker
+from workers import PrintingWorker, SolidEdgeWorker
 
 
 class ModernCADApp(QWidget):
@@ -58,6 +58,7 @@ class ModernCADApp(QWidget):
         self._status_message: str = ""
         self._draft_custom_inputs: Dict[str, Dict[str, Any]] = {}
         self.worker: Optional[SolidEdgeWorker] = None
+        self.printing_worker: Optional[PrintingWorker] = None
 
         from qfluentwidgets import BodyLabel, PrimaryPushButton, PushButton, SubtitleLabel, Theme, setTheme
 
@@ -74,9 +75,11 @@ class ModernCADApp(QWidget):
         self.nav_panel.doc_list.currentItemChanged.connect(self._on_document_changed)
 
         self._wire_document_actions()
+        self._setup_printing()
 
         # Auto-load on startup so users immediately see currently open files.
         QTimer.singleShot(120, self.connect_task)
+        QTimer.singleShot(300, self._load_printing_setup)
 
     def showEvent(self, event: QEvent) -> None:
         super().showEvent(event)
@@ -202,10 +205,10 @@ class ModernCADApp(QWidget):
         utilities_layout.setSpacing(18)
 
         self.utilities_nav_panel = UtilitiesNavPanel(SubtitleLabel, BodyLabel, PushButton, self.utilities_container)
-        self.printing_main = self._build_printing_placeholder(BodyLabel, SubtitleLabel)
+        self.printing_panel = PrintingPanel(SubtitleLabel, BodyLabel, self.utilities_container)
 
         utilities_layout.addWidget(self.utilities_nav_panel)
-        utilities_layout.addWidget(self.printing_main, 1)
+        utilities_layout.addWidget(self.printing_panel, 1)
         self.content_stack.addWidget(self.utilities_container)
 
         frame_layout.addWidget(self.content_stack, 1)
@@ -216,26 +219,62 @@ class ModernCADApp(QWidget):
         self.setStyleSheet(APP_STYLESHEET)
         self._update_window_chrome()
 
+    def _setup_printing(self) -> None:
+        self.printing_panel.search_requested.connect(
+            lambda code, drive: self._start_printing_worker(
+                "search_files", {"code": code, "drive": drive}
+            )
+        )
+        self.printing_panel.deep_search_requested.connect(
+            lambda code, drive: self._start_printing_worker(
+                "deep_search", {"code": code, "drive": drive}
+            )
+        )
+        self.printing_panel.print_requested.connect(
+            lambda files, printer, copies, prop, prop_val: self._start_printing_worker(
+                "print_files",
+                {"files": files, "printer": printer, "copies": copies, "property": prop, "property_value": prop_val},
+            )
+        )
+
+    def _load_printing_setup(self) -> None:
+        self._start_printing_worker("list_setup")
+
+    def _start_printing_worker(
+        self, action: str, payload: Optional[Dict[str, Any]] = None
+    ) -> None:
+        if self.printing_worker and self.printing_worker.isRunning():
+            self.printing_worker.wait(2000)
+        self.printing_worker = PrintingWorker(action, payload)
+        self.printing_worker.finished.connect(self._on_printing_worker_finished)
+        self.printing_worker.start()
+
+    def _on_printing_worker_finished(self, action: str, payload: Dict[str, Any]) -> None:
+        if action == "list_setup":
+            self.printing_panel.populate_printers(payload.get("printers", []))
+            self.printing_panel.populate_drives(payload.get("drives", []))
+        elif action == "search_files":
+            self.printing_panel.show_results(
+                payload.get("files", []),
+                deep_available=payload.get("deep_available", False),
+            )
+        elif action == "deep_search":
+            self.printing_panel.show_results(
+                payload.get("files", []),
+                deep_available=False,
+                is_deep_search=True,
+            )
+        elif action == "print_files":
+            ok = bool(payload.get("ok", False))
+            self.printing_panel.set_status(
+                "success" if ok else "error",
+                payload.get("message", ""),
+            )
+            self.printing_panel.set_busy(False)
+
     def _build_printing_placeholder(self, BodyLabel: Any, SubtitleLabel: Any) -> Any:
-        from PyQt5.QtWidgets import QFrame, QVBoxLayout as VBox
-        frame = QFrame()
-        frame.setObjectName("mainPanel")
-        layout = VBox(frame)
-        layout.setContentsMargins(28, 28, 28, 28)
-        layout.setSpacing(10)
-
-        title = SubtitleLabel("Printing")
-        title.setObjectName("mainTitle")
-
-        subtitle = BodyLabel("Configure and execute batch print jobs for Solid Edge documents.")
-        subtitle.setObjectName("pageSubtitle")
-        subtitle.setWordWrap(True)
-
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
-        layout.addStretch(1)
-
-        return frame
+        # kept for reference, replaced by PrintingPanel
+        pass
 
     def _wire_document_actions(self) -> None:
         for doc_type, buttons in self.doc_panel.action_buttons.items():
@@ -733,6 +772,8 @@ class ModernCADApp(QWidget):
     def closeEvent(self, event: QEvent) -> None:
         if self.worker and self.worker.isRunning():
             self.worker.wait(2000)
+        if self.printing_worker and self.printing_worker.isRunning():
+            self.printing_worker.wait(2000)
 
         try:
             disconnect_from_solid_edge()

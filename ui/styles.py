@@ -300,4 +300,172 @@ QPushButton#utilNavButton:hover:!checked {
     border: 1px solid rgba(255, 255, 255, 16);
     color: #d0dcf5;
 }
+
+/* ── Printing panel ────────────────────────────────────────────────────── */
+QFrame#printCard {
+    background-color: rgba(10, 16, 26, 200);
+    border: 1px solid rgba(255, 255, 255, 16);
+    border-radius: 12px;
+}
+QLabel#printSectionLabel {
+    color: #c4d4f0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+QLabel#printFieldLabel {
+    color: #7a91b8;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+QComboBox#printCombo {
+    color: #dde8ff;
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px solid rgba(183, 213, 255, 60);
+    border-radius: 8px;
+    padding: 0px 10px;
+    selection-background-color: rgba(45, 140, 255, 70);
+}
+QComboBox#printCombo:hover {
+    border-color: rgba(183, 213, 255, 110);
+    background-color: rgba(255, 255, 255, 14);
+}
+QComboBox#printCombo::drop-down {
+    border: none;
+    width: 22px;
+}
+QComboBox#printCombo QAbstractItemView {
+    background-color: #101824;
+    border: 1px solid rgba(255, 255, 255, 18);
+    border-radius: 8px;
+    color: #dde8ff;
+    selection-background-color: rgba(45, 140, 255, 80);
+    padding: 4px;
+    outline: none;
+}
+QLineEdit#printInput {
+    color: #dde8ff;
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px solid rgba(183, 213, 255, 60);
+    border-radius: 8px;
+    padding: 0px 10px;
+}
+QLineEdit#printInput:hover {
+    border-color: rgba(183, 213, 255, 100);
+    background-color: rgba(255, 255, 255, 14);
+}
+QLineEdit#printInput:focus {
+    border-color: rgba(45, 140, 255, 180);
+    background-color: rgba(255, 255, 255, 12);
+}
+QSpinBox#printSpin {
+    color: #dde8ff;
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px solid rgba(183, 213, 255, 60);
+    border-radius: 8px;
+    padding: 0px 6px;
+}
+QSpinBox#printSpin:hover {
+    border-color: rgba(183, 213, 255, 100);
+}
+QSpinBox#printSpin:focus {
+    border-color: rgba(45, 140, 255, 180);
+}
+QSpinBox#printSpin::up-button,
+QSpinBox#printSpin::down-button {
+    background: transparent;
+    border: none;
+    width: 16px;
+}
+QPushButton#printSearchBtn {
+    background-color: rgba(45, 140, 255, 150);
+    color: #ffffff;
+    border: 1px solid rgba(45, 140, 255, 190);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+}
+QPushButton#printSearchBtn:hover {
+    background-color: rgba(45, 140, 255, 210);
+}
+QPushButton#printSearchBtn:disabled {
+    background-color: rgba(45, 140, 255, 50);
+    color: rgba(255, 255, 255, 90);
+    border-color: rgba(45, 140, 255, 70);
+}
+QPushButton#printSecondaryBtn {
+    background-color: rgba(255, 255, 255, 10);
+    color: #9fb8d8;
+    border: 1px solid rgba(255, 255, 255, 16);
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 10px;
+}
+QPushButton#printSecondaryBtn:hover {
+    background-color: rgba(255, 255, 255, 18);
+    color: #d0dff5;
+}
+QPushButton#printBtn {
+    background-color: #2d8cff;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding-right: 6px;
+}
+QPushButton#printBtn:hover {
+    background-color: #58a4ff;
+}
+QPushButton#printBtn:disabled {
+    background-color: rgba(45, 140, 255, 55);
+    color: rgba(255, 255, 255, 90);
+}
+QListWidget#printResults {
+    background-color: rgba(255, 255, 255, 6);
+    border: 1px solid rgba(255, 255, 255, 14);
+    border-radius: 10px;
+    color: #d9e3f6;
+    padding: 4px;
+    outline: none;
+}
+QListWidget#printResults::item {
+    border-radius: 7px;
+    padding: 7px 8px;
+    margin: 2px;
+    color: #d9e3f6;
+}
+QListWidget#printResults::item:hover:!selected {
+    background-color: rgba(255, 255, 255, 8);
+    color: #d9e3f6;
+}
+QListWidget#printResults::item:selected,
+QListWidget#printResults::item:selected:active,
+QListWidget#printResults::item:selected:!active {
+    background-color: rgba(45, 140, 255, 80);
+    border: 1px solid rgba(45, 140, 255, 140);
+    color: #ffffff;
+    font-weight: 700;
+}
+QFrame#printDeepBar {
+    background-color: rgba(234, 179, 8, 16);
+    border: 1px solid rgba(234, 179, 8, 45);
+    border-radius: 10px;
+}
+QLabel#printDeepIcon {
+    color: #eab308;
+    font-size: 15px;
+}
+QLabel#printDeepMsg {
+    color: #c9b86c;
+    font-size: 13px;
+}
+QLabel#printStatus {
+    color: #7a91b8;
+    font-size: 13px;
+}
 """

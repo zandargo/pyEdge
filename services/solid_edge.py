@@ -437,6 +437,97 @@ def set_active_draft_custom_properties(
         pythoncom.CoUninitialize()
 
 
+def print_draft_file(
+    path: str,
+    printer: str = "",
+    copies: int = 1,
+    prop_name: str = "",
+    prop_value: str = "",
+) -> None:
+    """Open a Solid Edge file via COM, optionally update a custom property, print it, and close."""
+    import win32print  # type: ignore
+
+    pythoncom.CoInitialize()
+    app = None
+    app_created = False
+    doc = None
+    opened_by_us = False
+    original_printer: Optional[str] = None
+
+    try:
+        try:
+            app = win32com.client.GetActiveObject("SolidEdge.Application")
+        except Exception:
+            app = win32com.client.Dispatch("SolidEdge.Application")
+            app.Visible = False
+            app_created = True
+
+        # Switch default printer before opening so SE sees the new default.
+        if printer:
+            try:
+                original_printer = win32print.GetDefaultPrinter()
+                win32print.SetDefaultPrinter(printer)
+            except Exception:
+                original_printer = None
+
+        # Reuse the document if it is already open in SE.
+        norm_path = _path_key(path)
+        for existing in _iter_documents(app):
+            if _path_key(getattr(existing, "FullName", "")) == norm_path:
+                doc = existing
+                break
+
+        if doc is None:
+            doc = app.Documents.Open(path)
+            opened_by_us = True
+
+        # Update custom property before printing.
+        if prop_name and prop_value:
+            custom_set = _get_custom_property_set(doc)
+            if custom_set is not None:
+                try:
+                    prop_obj = custom_set.Item(prop_name)
+                    prop_obj.Value = prop_value
+                except Exception:
+                    try:
+                        custom_set.Add(prop_name, prop_value)
+                    except Exception:
+                        pass
+                try:
+                    doc.Save()
+                except Exception:
+                    pass
+
+        for _ in range(max(1, copies)):
+            doc.PrintOut()
+
+    finally:
+        if original_printer is not None:
+            try:
+                win32print.SetDefaultPrinter(original_printer)
+            except Exception:
+                pass
+
+        if doc is not None and opened_by_us:
+            try:
+                doc.Close(False)
+            except Exception:
+                pass
+            del doc
+
+        if app is not None:
+            if app_created:
+                try:
+                    app.Quit()
+                except Exception:
+                    pass
+            del app
+
+        gc.collect()
+        pythoncom.CoFreeUnusedLibraries()
+        pythoncom.CoUninitialize()
+
+
 def diagnose_solid_edge_connection() -> dict:
     """Return lightweight diagnostics for troubleshooting COM visibility issues."""
     pythoncom.CoInitialize()
