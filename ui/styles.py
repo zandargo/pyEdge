@@ -398,6 +398,109 @@ QPushButton#printSearchBtn {
 QPushButton#printSearchBtn:hover {
     background-color: rgba(45, 140, 255, 210);
 }
+
+/* ── Laser Cutting Gas calculator ──────────────────────────────────────── */
+QComboBox#gasCombo {
+    color: #dde8ff;
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px solid rgba(183, 213, 255, 60);
+    border-radius: 8px;
+    padding: 0px 10px;
+    selection-background-color: rgba(45, 140, 255, 70);
+}
+QComboBox#gasCombo:hover {
+    border-color: rgba(183, 213, 255, 110);
+    background-color: rgba(255, 255, 255, 14);
+}
+QComboBox#gasCombo::drop-down {
+    border: none;
+    width: 22px;
+}
+QComboBox#gasCombo QAbstractItemView {
+    background-color: #101824;
+    border: 1px solid rgba(255, 255, 255, 18);
+    border-radius: 8px;
+    color: #dde8ff;
+    selection-background-color: rgba(45, 140, 255, 80);
+    padding: 4px;
+    outline: none;
+}
+QDoubleSpinBox#gasSpin {
+    color: #dde8ff;
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px solid rgba(183, 213, 255, 60);
+    border-radius: 8px;
+    padding: 0px 8px;
+}
+QDoubleSpinBox#gasSpin:hover {
+    border-color: rgba(183, 213, 255, 110);
+}
+QDoubleSpinBox#gasSpin:focus {
+    border-color: rgba(45, 140, 255, 180);
+}
+QDoubleSpinBox#gasSpin::up-button,
+QDoubleSpinBox#gasSpin::down-button {
+    background: transparent;
+    border: none;
+    width: 16px;
+}
+QCheckBox#gasCheck {
+    color: #c4d4f0;
+    font-size: 13px;
+    font-weight: 600;
+    spacing: 8px;
+}
+QCheckBox#gasCheck::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid rgba(183, 213, 255, 80);
+    background-color: rgba(255, 255, 255, 8);
+}
+QCheckBox#gasCheck::indicator:checked {
+    background-color: rgba(45, 140, 255, 200);
+    border-color: rgba(45, 140, 255, 220);
+}
+QPushButton#gasCalcBtn {
+    background-color: rgba(45, 140, 255, 180);
+    color: #ffffff;
+    border: 1px solid rgba(45, 140, 255, 220);
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+}
+QPushButton#gasCalcBtn:hover {
+    background-color: rgba(45, 140, 255, 230);
+}
+QPushButton#gasCalcBtn:pressed {
+    background-color: rgba(30, 110, 220, 240);
+}
+QFrame#gasResultCard {
+    background-color: rgba(10, 16, 26, 200);
+    border: 1px solid rgba(255, 255, 255, 16);
+    border-radius: 12px;
+}
+QLabel#gasResultDesc {
+    color: #a2b2cd;
+    font-size: 13px;
+}
+QFrame#gasSeparator {
+    color: rgba(255, 255, 255, 16);
+    background-color: rgba(255, 255, 255, 16);
+    border: none;
+    max-height: 1px;
+}
+QLabel#gasReasonHeader {
+    color: #89a0c4;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+QLabel#gasReason {
+    color: #c4d4f0;
+    font-size: 13px;
+    line-height: 1.5;
+}
 QPushButton#printSearchBtn:disabled {
     background-color: rgba(45, 140, 255, 50);
     color: rgba(255, 255, 255, 90);

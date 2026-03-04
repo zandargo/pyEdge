@@ -1,0 +1,235 @@
+A escolha do **gás de assistência no corte a laser** depende principalmente de:
+
+* **Material**
+* **Espessura**
+* **Objetivo do corte** (qualidade vs custo vs velocidade)
+* **Necessidade de borda oxidada ou limpa**
+* **Potência do laser disponível**
+
+A lógica básica é:
+
+* **Oxigênio (O₂)** → reage com o metal e **aumenta a energia do corte** (reação exotérmica). Ideal para **aço carbono espesso**.
+* **Nitrogênio (N₂)** → gás **inerte**, evita oxidação e gera **bordas limpas**. Ideal para **inox** e peças que serão **soldadas/pintadas**.
+* **Ar comprimido** → alternativa **barata** (≈78% N₂ + 21% O₂). Qualidade intermediária.
+
+---
+
+# Algoritmo de Seleção de Gás de Assistência para Corte a Laser
+
+## Variáveis de Entrada
+
+```
+material        (carbon_steel | stainless_steel | galvanized_steel | aluminum)
+thickness_mm    (espessura da chapa)
+edge_quality    (high | medium | low)
+post_process    (none | welding | painting)
+cost_priority   (true | false)
+laser_power_kw  (potência do laser)
+```
+
+---
+
+# Regras Técnicas Simplificadas
+
+### 1️ Aço Carbono
+
+| Espessura | Gás recomendado     |
+| --------- | ------------------- |
+| ≤ 3 mm    | Ar comprimido ou N₂ |
+| 3–12 mm   | O₂                  |
+| > 12 mm   | O₂                  |
+
+Motivo: O₂ aumenta potência efetiva do corte.
+
+---
+
+### 2️ Aço Inoxidável
+
+| Espessura | Gás recomendado          |
+| --------- | ------------------------ |
+| ≤ 6 mm    | N₂                       |
+| 6–20 mm   | N₂                       |
+| > 20 mm   | N₂ (laser muito potente) |
+
+Motivo: evitar oxidação da borda.
+
+---
+
+### 3️ Aço Galvanizado
+
+| Espessura | Gás recomendado |
+| --------- | --------------- |
+| ≤ 3 mm    | Ar comprimido   |
+| > 3 mm    | N₂              |
+
+Motivo: reduzir vapores de zinco.
+
+---
+
+### 4️ Alumínio
+
+| Espessura | Gás recomendado |
+| --------- | --------------- |
+| ≤ 6 mm    | N₂              |
+| > 6 mm    | N₂ alta pressão |
+
+Motivo: evitar óxidos.
+
+---
+
+# Algoritmo (Pseudocódigo)
+
+```pseudo
+function selectAssistGas(material, thickness_mm, edge_quality, post_process, cost_priority):
+
+    if material == "carbon_steel":
+
+        if thickness_mm <= 3:
+            if edge_quality == "high":
+                return "nitrogen"
+            else:
+                return "compressed_air"
+
+        else:
+            return "oxygen"
+
+
+    if material == "stainless_steel":
+
+        if cost_priority == true and thickness_mm <= 3:
+            return "compressed_air"
+
+        return "nitrogen"
+
+
+    if material == "galvanized_steel":
+
+        if thickness_mm <= 3:
+            return "compressed_air"
+        else:
+            return "nitrogen"
+
+
+    if material == "aluminum":
+
+        return "nitrogen"
+
+
+    return "nitrogen"
+```
+
+---
+
+# Regras Adicionais (Refinamento Industrial)
+
+## Se houver solda ou pintura posterior
+
+```pseudo
+if post_process == welding OR post_process == painting:
+    avoid oxygen
+```
+
+Porque a camada de óxido prejudica.
+
+---
+
+## Se a prioridade for custo
+
+```pseudo
+if cost_priority == true AND thickness_mm <= 3:
+    prefer compressed_air
+```
+
+Ar comprimido pode reduzir custo em **até 80%**.
+
+---
+
+## Se a espessura for muito alta
+
+```pseudo
+if material == carbon_steel AND thickness_mm > 12:
+    force oxygen
+```
+
+---
+
+# Exemplo de Decisão
+
+### Caso 1
+
+```
+Material: aço carbono
+Espessura: 10 mm
+```
+
+Resultado:
+
+```
+Oxigênio
+```
+
+---
+
+### Caso 2
+
+```
+Material: inox
+Espessura: 2 mm
+Solda depois
+```
+
+Resultado:
+
+```
+Nitrogênio
+```
+
+---
+
+### Caso 3
+
+```
+Material: aço carbono
+Espessura: 2 mm
+Produção em massa
+Custo prioritário
+```
+
+Resultado:
+
+```
+Ar comprimido
+```
+
+---
+
+# Fluxograma Simplificado
+
+```
+            MATERIAL
+                │
+     ┌──────────┼───────────┐
+     │                      │
+ AÇO CARBONO            INOX/AL
+     │                      │
+ espessura > 3?         sempre N2
+     │
+  SIM → O2
+  NÃO
+     │
+ alta qualidade?
+     │
+  SIM → N2
+  NÃO → AR
+```
+
+---
+
+💡 **Regra prática usada na indústria:**
+
+* **Aço carbono fino** → ar ou O₂
+* **Aço carbono grosso** → O₂
+* **Inox** → N₂
+* **Alumínio** → N₂
+
+---

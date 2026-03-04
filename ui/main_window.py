@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import (
 
 from models import DocumentInfo
 from services.solid_edge import disconnect_from_solid_edge
-from ui.components import DocumentPanel, NavigationPanel, TitleBar, UtilitiesNavPanel, PrintingPanel
+from ui.components import CalculatorsNavPanel, CalculatorsPanel, DocumentPanel, NavigationPanel, TitleBar, UtilitiesNavPanel, PrintingPanel
 from ui.styles import APP_STYLESHEET
 from workers import PrintingWorker, SolidEdgeWorker
 
@@ -162,6 +162,12 @@ class ModernCADApp(QWidget):
         self.tab_files.setChecked(True)
         self.tab_files.setFixedHeight(40)
 
+        self.tab_calculators = QtPushButton("Calculators")
+        self.tab_calculators.setObjectName("tabButton")
+        self.tab_calculators.setCheckable(True)
+        self.tab_calculators.setChecked(False)
+        self.tab_calculators.setFixedHeight(40)
+
         self.tab_utilities = QtPushButton("Utilities")
         self.tab_utilities.setObjectName("tabButton")
         self.tab_utilities.setCheckable(True)
@@ -171,9 +177,11 @@ class ModernCADApp(QWidget):
         self._tab_group = QButtonGroup(self)
         self._tab_group.setExclusive(True)
         self._tab_group.addButton(self.tab_files, 0)
-        self._tab_group.addButton(self.tab_utilities, 1)
+        self._tab_group.addButton(self.tab_calculators, 1)
+        self._tab_group.addButton(self.tab_utilities, 2)
 
         tab_bar_layout.addWidget(self.tab_files)
+        tab_bar_layout.addWidget(self.tab_calculators)
         tab_bar_layout.addWidget(self.tab_utilities)
         tab_bar_layout.addStretch(1)
         frame_layout.addWidget(tab_bar)
@@ -204,7 +212,20 @@ class ModernCADApp(QWidget):
         workspace_layout.addWidget(self.doc_panel, 1)
         self.content_stack.addWidget(self.workspace_container)
 
-        # Utilities workspace (index 1)
+        # Calculators workspace (index 1)
+        self.calculators_container = QtWidget()
+        calculators_layout = QHBoxLayout(self.calculators_container)
+        calculators_layout.setContentsMargins(20, 20, 20, 20)
+        calculators_layout.setSpacing(18)
+
+        self.calculators_nav_panel = CalculatorsNavPanel(SubtitleLabel, BodyLabel, PushButton, self.calculators_container)
+        self.calculators_panel = CalculatorsPanel(SubtitleLabel, BodyLabel, self.calculators_container)
+
+        calculators_layout.addWidget(self.calculators_nav_panel)
+        calculators_layout.addWidget(self.calculators_panel, 1)
+        self.content_stack.addWidget(self.calculators_container)
+
+        # Utilities workspace (index 2)
         self.utilities_container = QtWidget()
         utilities_layout = QHBoxLayout(self.utilities_container)
         utilities_layout.setContentsMargins(20, 20, 20, 20)
@@ -220,7 +241,8 @@ class ModernCADApp(QWidget):
         frame_layout.addWidget(self.content_stack, 1)
 
         self.tab_files.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
-        self.tab_utilities.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
+        self.tab_calculators.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
+        self.tab_utilities.clicked.connect(lambda: self.content_stack.setCurrentIndex(2))
 
         self.setStyleSheet(APP_STYLESHEET)
         self._update_window_chrome()
