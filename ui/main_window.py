@@ -87,11 +87,6 @@ class ModernCADApp(QWidget):
             self._start_entry_animation()
             self._entry_animated = True
 
-    def changeEvent(self, event: QEvent) -> None:
-        if event.type() == QEvent.WindowStateChange:
-            self._update_window_chrome()
-        super().changeEvent(event)
-
     def setWindowIcon(self, icon: QIcon) -> None:
         """Keep the native window icon and custom title bar icon in sync."""
         super().setWindowIcon(icon)
@@ -382,7 +377,9 @@ class ModernCADApp(QWidget):
         self.tab_settings.setText(self.tr("Settings"))
 
     def changeEvent(self, event: QEvent) -> None:
-        if event.type() == QEvent.LanguageChange:
+        if event.type() == QEvent.WindowStateChange:
+            self._update_window_chrome()
+        elif event.type() == QEvent.LanguageChange:
             self.retranslateUi()
             # Refresh dynamic labels that were set before the language change.
             self._set_connection_indicator()
