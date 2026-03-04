@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import List, Type
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, QEvent, pyqtSignal
 from PyQt5.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -42,14 +42,14 @@ class PrintingPanel(QFrame):
         root.setSpacing(0)
 
         # ── Header ──────────────────────────────────────────────────────────
-        title = SubtitleLabel("Printing")
-        title.setObjectName("mainTitle")
-        subtitle = BodyLabel("Search and print Solid Edge draft documents.")
-        subtitle.setObjectName("pageSubtitle")
-        subtitle.setWordWrap(True)
-        root.addWidget(title)
+        self._title_lbl = SubtitleLabel()
+        self._title_lbl.setObjectName("mainTitle")
+        self._subtitle_lbl = BodyLabel()
+        self._subtitle_lbl.setObjectName("pageSubtitle")
+        self._subtitle_lbl.setWordWrap(True)
+        root.addWidget(self._title_lbl)
         root.addSpacing(2)
-        root.addWidget(subtitle)
+        root.addWidget(self._subtitle_lbl)
         root.addSpacing(22)
 
         # ── Configuration card ───────────────────────────────────────────────
@@ -59,9 +59,9 @@ class PrintingPanel(QFrame):
         config_inner.setContentsMargins(18, 14, 18, 16)
         config_inner.setSpacing(10)
 
-        config_section = QLabel("Configuration")
-        config_section.setObjectName("printSectionLabel")
-        config_inner.addWidget(config_section)
+        self._config_section = QLabel()
+        self._config_section.setObjectName("printSectionLabel")
+        config_inner.addWidget(self._config_section)
 
         config_row = QWidget()
         config_row.setStyleSheet("background: transparent;")
@@ -70,7 +70,9 @@ class PrintingPanel(QFrame):
         config_row_layout.setSpacing(16)
 
         printer_col = self._col()
-        self._field_label("Printer", printer_col)
+        self._printer_lbl = QLabel()
+        self._printer_lbl.setObjectName("printFieldLabel")
+        printer_col.addWidget(self._printer_lbl)
         self.printer_combo = QComboBox()
         self.printer_combo.setObjectName("printCombo")
         self.printer_combo.setMinimumHeight(36)
@@ -78,7 +80,9 @@ class PrintingPanel(QFrame):
         printer_col.addWidget(self.printer_combo)
 
         drive_col = self._col()
-        self._field_label("Drive", drive_col)
+        self._drive_lbl = QLabel()
+        self._drive_lbl.setObjectName("printFieldLabel")
+        drive_col.addWidget(self._drive_lbl)
         self.drive_combo = QComboBox()
         self.drive_combo.setObjectName("printCombo")
         self.drive_combo.setMinimumHeight(36)
@@ -98,9 +102,9 @@ class PrintingPanel(QFrame):
         search_inner.setContentsMargins(18, 14, 18, 16)
         search_inner.setSpacing(10)
 
-        search_section = QLabel("Search")
-        search_section.setObjectName("printSectionLabel")
-        search_inner.addWidget(search_section)
+        self._search_section = QLabel()
+        self._search_section.setObjectName("printSectionLabel")
+        search_inner.addWidget(self._search_section)
 
         search_row = QWidget()
         search_row.setStyleSheet("background: transparent;")
@@ -109,7 +113,9 @@ class PrintingPanel(QFrame):
         search_row_layout.setSpacing(14)
 
         code_col = self._col()
-        self._field_label("File Code", code_col)
+        self._code_lbl = QLabel()
+        self._code_lbl.setObjectName("printFieldLabel")
+        code_col.addWidget(self._code_lbl)
         self.code_input = QLineEdit()
         self.code_input.setObjectName("printInput")
         self.code_input.setPlaceholderText("001-0001  or  001-0001-A1")
@@ -118,7 +124,9 @@ class PrintingPanel(QFrame):
         code_col.addWidget(self.code_input)
 
         prop_col = self._col()
-        self._field_label("SE Property", prop_col)
+        self._prop_lbl = QLabel()
+        self._prop_lbl.setObjectName("printFieldLabel")
+        prop_col.addWidget(self._prop_lbl)
         self.prop_input = QLineEdit()
         self.prop_input.setObjectName("printInput")
         self.prop_input.setText("Quantidade")
@@ -126,7 +134,9 @@ class PrintingPanel(QFrame):
         prop_col.addWidget(self.prop_input)
 
         prop_value_col = self._col()
-        self._field_label("Property Value", prop_value_col)
+        self._prop_val_lbl = QLabel()
+        self._prop_val_lbl.setObjectName("printFieldLabel")
+        prop_value_col.addWidget(self._prop_val_lbl)
         self.prop_value_input = QLineEdit()
         self.prop_value_input.setObjectName("printInput")
         self.prop_value_input.setPlaceholderText("e.g. 3")
@@ -135,7 +145,7 @@ class PrintingPanel(QFrame):
 
         search_btn_col = self._col()
         search_btn_col.addSpacing(22)  # align button baseline with inputs
-        self.search_btn = QPushButton("Search")
+        self.search_btn = QPushButton()
         self.search_btn.setObjectName("printSearchBtn")
         self.search_btn.setMinimumHeight(36)
         self.search_btn.setMinimumWidth(88)
@@ -163,7 +173,7 @@ class PrintingPanel(QFrame):
         results_header_layout.setContentsMargins(0, 0, 0, 0)
         results_header_layout.setSpacing(10)
 
-        self.results_label = QLabel("Found files")
+        self.results_label = QLabel()
         self.results_label.setObjectName("printSectionLabel")
         results_header_layout.addWidget(self.results_label)
         results_header_layout.addStretch(1)
@@ -184,8 +194,8 @@ class PrintingPanel(QFrame):
         copies_row_layout.setContentsMargins(0, 6, 0, 0)
         copies_row_layout.setSpacing(10)
 
-        copies_lbl = QLabel("Copies")
-        copies_lbl.setObjectName("printFieldLabel")
+        self._copies_lbl = QLabel()
+        self._copies_lbl.setObjectName("printFieldLabel")
         self.copies_spin = QSpinBox()
         self.copies_spin.setObjectName("printSpin")
         self.copies_spin.setRange(1, 999)
@@ -193,7 +203,7 @@ class PrintingPanel(QFrame):
         self.copies_spin.setMinimumHeight(34)
         self.copies_spin.setFixedWidth(80)
 
-        copies_row_layout.addWidget(copies_lbl)
+        copies_row_layout.addWidget(self._copies_lbl)
         copies_row_layout.addWidget(self.copies_spin)
         copies_row_layout.addStretch(1)
         results_layout.addWidget(copies_row)
@@ -207,10 +217,10 @@ class PrintingPanel(QFrame):
 
         deep_icon = QLabel("⚠")
         deep_icon.setObjectName("printDeepIcon")
-        self._deep_msg = BodyLabel("No files found in the preferred location.")
+        self._deep_msg = BodyLabel()
         self._deep_msg.setObjectName("printDeepMsg")
         self._deep_msg.setWordWrap(False)
-        self.deep_btn = QPushButton("Search entire drive")
+        self.deep_btn = QPushButton()
         self.deep_btn.setObjectName("printSecondaryBtn")
         self.deep_btn.setFixedHeight(30)
         self.deep_btn.clicked.connect(self._on_deep_search)
@@ -234,7 +244,7 @@ class PrintingPanel(QFrame):
         self.status_label = QLabel("")
         self.status_label.setObjectName("printStatus")
 
-        self.print_btn = QPushButton("  Print")
+        self.print_btn = QPushButton()
         self.print_btn.setObjectName("printBtn")
         self.print_btn.setMinimumHeight(44)
         self.print_btn.setMinimumWidth(130)
@@ -244,6 +254,32 @@ class PrintingPanel(QFrame):
         footer_layout.addWidget(self.status_label, 1)
         footer_layout.addWidget(self.print_btn)
         root.addWidget(footer)
+
+        self.retranslateUi()
+
+    # ── i18n ─────────────────────────────────────────────────────────────────
+
+    def retranslateUi(self) -> None:
+        self._title_lbl.setText(self.tr("Printing"))
+        self._subtitle_lbl.setText(self.tr("Search and print Solid Edge draft documents."))
+        self._config_section.setText(self.tr("Configuration"))
+        self._printer_lbl.setText(self.tr("Printer"))
+        self._drive_lbl.setText(self.tr("Drive"))
+        self._search_section.setText(self.tr("Search"))
+        self._code_lbl.setText(self.tr("File Code"))
+        self._prop_lbl.setText(self.tr("SE Property"))
+        self._prop_val_lbl.setText(self.tr("Property Value"))
+        self.search_btn.setText(self.tr("Search files"))
+        self.results_label.setText(self.tr("Found files"))
+        self._copies_lbl.setText(self.tr("Copies"))
+        self._deep_msg.setText(self.tr("No files found in the preferred location."))
+        self.deep_btn.setText(self.tr("Search entire drive"))
+        self.print_btn.setText(self.tr("  Print"))
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
 
     # ── Private helpers ───────────────────────────────────────────────────
 
@@ -278,14 +314,14 @@ class PrintingPanel(QFrame):
         self._last_drive = drive
         self.results_list.clear()
         self.deep_bar.setVisible(False)
-        self.results_label.setText("Searching…")
+        self.results_label.setText(self.tr("Searching…"))
         self.search_btn.setEnabled(False)
         self.print_btn.setEnabled(False)
         self.search_requested.emit(code, drive)
 
     def _on_deep_search(self) -> None:
         self.deep_bar.setVisible(False)
-        self.results_label.setText("Searching entire drive…")
+        self.results_label.setText(self.tr("Searching entire drive…"))
         self.search_btn.setEnabled(False)
         self.deep_search_requested.emit(self._last_code, self._last_drive)
 
@@ -295,7 +331,7 @@ class PrintingPanel(QFrame):
         if not files:
             return
         self.print_btn.setEnabled(False)
-        self.set_status("info", "Sending to printer…")
+        self.set_status("info", self.tr("Sending to printer…"))
         self.print_requested.emit(
             files,
             self.printer_combo.currentText(),
@@ -327,13 +363,15 @@ class PrintingPanel(QFrame):
         self.results_list.clear()
 
         if not files:
-            suffix = " across the entire drive." if is_deep_search else "."
-            self.results_label.setText(f"No files found{suffix}")
+            if is_deep_search:
+                self.results_label.setText(self.tr("No files found across the entire drive."))
+            else:
+                self.results_label.setText(self.tr("No files found."))
             self.deep_bar.setVisible(deep_available)
             self.print_btn.setEnabled(False)
             return
 
-        self.results_label.setText(f"Found files  ({len(files)})")
+        self.results_label.setText(self.tr("Found files ({0})").format(len(files)))
         self.deep_bar.setVisible(False)
         for path in files:
             item = QListWidgetItem(os.path.basename(path))

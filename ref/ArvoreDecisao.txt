@@ -1,0 +1,32 @@
+Qual é o material?
+
+├─ AÇO CARBONO
+│   └─ espessura > 3 mm?
+│         ├─ SIM → OXIGÊNIO
+│         │
+│         └─ NÃO
+│             ├─ borda precisa ser limpa?
+│             │       └─ SIM → NITROGÊNIO
+│             │
+│             └─ NÃO
+│                 ├─ custo prioritário?
+│                 │      └─ SIM → AR
+│                 │
+│                 └─ NÃO → NITROGÊNIO
+│
+├─ INOX
+│   └─ solda ou pintura depois?
+│         ├─ SIM → NITROGÊNIO
+│         │
+│         └─ NÃO
+│             ├─ espessura ≤ 3 mm e custo prioritário?
+│             │      └─ SIM → AR
+│             │
+│             └─ NÃO → NITROGÊNIO
+│
+├─ GALVANIZADO
+│   ├─ espessura ≤ 3 mm → AR
+│   └─ espessura > 3 mm → NITROGÊNIO
+│
+└─ ALUMÍNIO
+       └─ NITROGÊNIO

@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import (
 
 from models import DocumentInfo
 from services.solid_edge import disconnect_from_solid_edge
-from ui.components import CalculatorsNavPanel, CalculatorsPanel, DocumentPanel, NavigationPanel, TitleBar, UtilitiesNavPanel, PrintingPanel
+from ui.components import CalculatorsNavPanel, CalculatorsPanel, DocumentPanel, NavigationPanel, SettingsPanel, TitleBar, UtilitiesNavPanel, PrintingPanel
 from ui.styles import APP_STYLESHEET
 from workers import PrintingWorker, SolidEdgeWorker
 
@@ -67,7 +67,7 @@ class ModernCADApp(QWidget):
         self._build_ui(PrimaryPushButton, PushButton, BodyLabel, SubtitleLabel)
         self._set_status("ready", "Status: Ready")
         self._set_connection_indicator()
-        self._show_empty_panel("Click Connect to load open Solid Edge documents.")
+        self._show_empty_panel(self.tr("Click Connect to load open Solid Edge documents."))
 
         self.nav_panel.connect_btn.clicked.connect(self.connect_task)
         self.nav_panel.refresh_btn.clicked.connect(self.refresh_task)
@@ -156,33 +156,41 @@ class ModernCADApp(QWidget):
         tab_bar_layout.setContentsMargins(20, 0, 20, 0)
         tab_bar_layout.setSpacing(0)
 
-        self.tab_files = QtPushButton("Files")
+        self.tab_files = QtPushButton()
         self.tab_files.setObjectName("tabButton")
         self.tab_files.setCheckable(True)
         self.tab_files.setChecked(True)
         self.tab_files.setFixedHeight(40)
 
-        self.tab_calculators = QtPushButton("Calculators")
+        self.tab_calculators = QtPushButton()
         self.tab_calculators.setObjectName("tabButton")
         self.tab_calculators.setCheckable(True)
         self.tab_calculators.setChecked(False)
         self.tab_calculators.setFixedHeight(40)
 
-        self.tab_utilities = QtPushButton("Utilities")
+        self.tab_utilities = QtPushButton()
         self.tab_utilities.setObjectName("tabButton")
         self.tab_utilities.setCheckable(True)
         self.tab_utilities.setChecked(False)
         self.tab_utilities.setFixedHeight(40)
+
+        self.tab_settings = QtPushButton()
+        self.tab_settings.setObjectName("tabButton")
+        self.tab_settings.setCheckable(True)
+        self.tab_settings.setChecked(False)
+        self.tab_settings.setFixedHeight(40)
 
         self._tab_group = QButtonGroup(self)
         self._tab_group.setExclusive(True)
         self._tab_group.addButton(self.tab_files, 0)
         self._tab_group.addButton(self.tab_calculators, 1)
         self._tab_group.addButton(self.tab_utilities, 2)
+        self._tab_group.addButton(self.tab_settings, 3)
 
         tab_bar_layout.addWidget(self.tab_files)
         tab_bar_layout.addWidget(self.tab_calculators)
         tab_bar_layout.addWidget(self.tab_utilities)
+        tab_bar_layout.addWidget(self.tab_settings)
         tab_bar_layout.addStretch(1)
         frame_layout.addWidget(tab_bar)
 
@@ -238,14 +246,20 @@ class ModernCADApp(QWidget):
         utilities_layout.addWidget(self.printing_panel, 1)
         self.content_stack.addWidget(self.utilities_container)
 
+        # Settings workspace (index 3)
+        self.settings_panel = SettingsPanel(self.window_frame)
+        self.content_stack.addWidget(self.settings_panel)
+
         frame_layout.addWidget(self.content_stack, 1)
 
         self.tab_files.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
         self.tab_calculators.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
         self.tab_utilities.clicked.connect(lambda: self.content_stack.setCurrentIndex(2))
+        self.tab_settings.clicked.connect(lambda: self.content_stack.setCurrentIndex(3))
 
         self.setStyleSheet(APP_STYLESHEET)
         self._update_window_chrome()
+        self.retranslateUi()
 
     def _setup_printing(self) -> None:
         self.printing_panel.search_requested.connect(
@@ -358,10 +372,27 @@ class ModernCADApp(QWidget):
     def _update_titlebar_icons(self) -> None:
         """Update titlebar icons based on window state."""
         self.title_bar.set_maximize_state(self.isMaximized())
-        if self.isMaximized():
-            self.title_bar.max_btn.setToolTip("Restore")
-        else:
-            self.title_bar.max_btn.setToolTip("Maximize")
+
+    # ── i18n ───────────────────────────────────────────────────────────────
+
+    def retranslateUi(self) -> None:
+        self.tab_files.setText(self.tr("Files"))
+        self.tab_calculators.setText(self.tr("Calculators"))
+        self.tab_utilities.setText(self.tr("Utilities"))
+        self.tab_settings.setText(self.tr("Settings"))
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.LanguageChange:
+            self.retranslateUi()
+            # Refresh dynamic labels that were set before the language change.
+            self._set_connection_indicator()
+            self.nav_panel.set_doc_count(len(self._documents))
+            if self._selected_document:
+                doc_type = self._selected_document.document_type
+                self.doc_panel.main_title.setText(
+                    self.tr("Document Workspace - {0}").format(doc_type)
+                )
+        super().changeEvent(event)
 
     def _set_status(self, state: str, message: str) -> None:
         # Keep status text available for potential diagnostics without a visible status card.
@@ -370,7 +401,7 @@ class ModernCADApp(QWidget):
     def _set_connection_indicator(self) -> None:
         if self._connected:
             self.doc_panel.connection_label.setText(
-                f"Connection: Connected ({len(self._documents)} document(s))"
+                self.tr("Connection: Connected ({0} document(s))").format(len(self._documents))
             )
             self.doc_panel.connection_label.setStyleSheet(
                 "color: #34d399;"
@@ -379,7 +410,7 @@ class ModernCADApp(QWidget):
             )
             return
 
-        self.doc_panel.connection_label.setText("Connection: Disconnected")
+        self.doc_panel.connection_label.setText(self.tr("Connection: Disconnected"))
         self.doc_panel.connection_label.setStyleSheet(
             "color: #8da0bf;"
             "background-color: rgba(255, 255, 255, 8);"
@@ -389,7 +420,6 @@ class ModernCADApp(QWidget):
     def _show_empty_panel(self, message: str) -> None:
         self.doc_panel.empty_message.setText(message)
         self.doc_panel.doc_stack.setCurrentWidget(self.doc_panel.empty_page)
-
     def _start_worker(
         self,
         action: str,
@@ -417,11 +447,10 @@ class ModernCADApp(QWidget):
     def disconnect_task(self) -> None:
         self._set_status("processing", "Status: Disconnecting...")
         self._start_worker("disconnect")
-
     def _populate_document_list(self, documents: List[DocumentInfo]) -> None:
         previous_key = self._selection_key
         self.nav_panel.doc_list.clear()
-        self.nav_panel.doc_count_label.setText(f"Documents: {len(documents)}")
+        self.nav_panel.set_doc_count(len(documents))
 
         for document in documents:
             item = QListWidgetItem(document.list_label)
@@ -433,7 +462,7 @@ class ModernCADApp(QWidget):
             self._selected_document = None
             self._selection_key = None
             self._preferred_selection_key = None
-            self._show_empty_panel("Connected, but no open documents were found.")
+            self._show_empty_panel(self.tr("Connected, but no open documents were found."))
             return
 
         selected_row = self._find_row_by_key(self._preferred_selection_key)
@@ -479,7 +508,9 @@ class ModernCADApp(QWidget):
         if doc_type not in self.doc_panel.doc_pages:
             doc_type = "Unknown"
 
-        self.doc_panel.main_title.setText(f"Document Workspace - {doc_type}")
+        self.doc_panel.main_title.setText(
+                    self.tr("Document Workspace - {0}").format(doc_type)
+                )
 
         widgets = self.doc_panel.page_widgets[doc_type]
         widgets["name"].setText(document.name)
@@ -750,7 +781,7 @@ class ModernCADApp(QWidget):
                 self._connected = False
                 self._documents = []
                 self.nav_panel.doc_list.clear()
-                self._show_empty_panel("Could not connect to Solid Edge.")
+                self._show_empty_panel(self.tr("Could not connect to Solid Edge."))
 
         elif action == "disconnect" and is_success:
             self._connected = False
@@ -759,9 +790,9 @@ class ModernCADApp(QWidget):
             self._selection_key = None
             self._preferred_selection_key = None
             self.nav_panel.doc_list.clear()
-            self.nav_panel.doc_count_label.setText("Documents: 0")
-            self.doc_panel.main_title.setText("Document Workspace")
-            self._show_empty_panel("Click Connect to load open Solid Edge documents.")
+            self.nav_panel.set_doc_count(0)
+            self.doc_panel.main_title.setText(self.tr("Document Workspace"))
+            self._show_empty_panel(self.tr("Click Connect to load open Solid Edge documents."))
 
         self._set_status("success" if is_success else "error", f"Status: {message}")
         self._set_connection_indicator()

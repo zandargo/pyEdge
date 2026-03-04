@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Tuple, Type
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QEvent, Qt
 from PyQt5.QtWidgets import QFormLayout, QFrame, QHBoxLayout, QLabel, QScrollArea, QStackedWidget, QVBoxLayout, QWidget
 
 
@@ -22,7 +22,7 @@ class DocumentPanel(QFrame):
         layout.setContentsMargins(22, 22, 22, 22)
         layout.setSpacing(12)
 
-        self.main_title = SubtitleLabel("Document Workspace")
+        self.main_title = SubtitleLabel()
         self.main_title.setObjectName("mainTitle")
 
         self.connection_label = BodyLabel("")
@@ -44,7 +44,245 @@ class DocumentPanel(QFrame):
         layout.addSpacing(4)
         layout.addWidget(self.doc_stack, 1)
 
+        self.retranslateUi()
+
+    # ── i18n ─────────────────────────────────────────────────────────────────
+
+    def _action_label(self, doc_type: str, action_key: str) -> str:
+        """Return the translated label for a given doc-type + action-key pair."""
+        mapping: Dict[str, Dict[str, str]] = {
+            "Part": {
+                "activate": self.tr("Activate Part"),
+                "copy_name": self.tr("Copy Part Name"),
+                "open_folder": self.tr("Open Part Folder"),
+            },
+            "Assembly": {
+                "activate": self.tr("Activate Assembly"),
+                "copy_path": self.tr("Copy Assembly Path"),
+                "open_folder": self.tr("Open Assembly Folder"),
+            },
+            "Draft": {
+                "activate": self.tr("Activate Draft"),
+                "save_custom_props": self.tr("Save Custom Properties"),
+                "copy_path": self.tr("Copy Draft Path"),
+                "open_folder": self.tr("Open Draft Folder"),
+            },
+            "Unknown": {
+                "activate": self.tr("Activate Document"),
+                "copy_name": self.tr("Copy Name"),
+                "open_folder": self.tr("Open Folder"),
+            },
+        }
+        return mapping.get(doc_type, mapping["Unknown"]).get(action_key, action_key)
+
+    def retranslateUi(self) -> None:
+        self.main_title.setText(self.tr("Document Workspace"))
+
+        # Per-page titles, subtitles, and key labels
+        page_titles = {
+            "Part": self.tr("Part Document"),
+            "Assembly": self.tr("Assembly Document"),
+            "Draft": self.tr("Draft Document"),
+            "Unknown": self.tr("Unknown Document"),
+        }
+        page_subtitles = {
+            "Part": self.tr("Tools and metadata for standalone model files."),
+            "Assembly": self.tr("Context for component structures and top-level design files."),
+            "Draft": self.tr("Drawing view workspace for detailing and annotation files."),
+            "Unknown": self.tr("Metadata view for documents with an unrecognized type."),
+        }
+        for doc_type, widgets in self.page_widgets.items():
+            if "_title" in widgets:
+                widgets["_title"].setText(page_titles.get(doc_type, doc_type))
+            if "_subtitle" in widgets:
+                widgets["_subtitle"].setText(page_subtitles.get(doc_type, ""))
+            if "_name_key" in widgets:
+                widgets["_name_key"].setText(self.tr("Name"))
+            if "_path_key" in widgets:
+                widgets["_path_key"].setText(self.tr("Path"))
+            if "_active_key" in widgets:
+                widgets["_active_key"].setText(self.tr("Active in Solid Edge"))
+            if "_custom_props_key" in widgets:
+                widgets["_custom_props_key"].setText(self.tr("Custom Properties"))
+
+        # Empty page
+        if hasattr(self, "_empty_title"):
+            self._empty_title.setText(self.tr("No Document Selected"))
+
+        # Action buttons
+        for doc_type, buttons in self.action_buttons.items():
+            for btn in buttons:
+                action_key = str(btn.property("actionKey"))
+                btn.setText(self._action_label(doc_type, action_key))
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
+    # ── Build helpers ─────────────────────────────────────────────────────────
+
     def _build_document_page(self, doc_type: str, BodyLabel: Type) -> QFrame:
+        page = QFrame(self.doc_stack)
+        page.setObjectName("docPage")
+
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(8)
+
+        title = QLabel()
+        title.setObjectName("pageTitle")
+
+        subtitle = BodyLabel()
+        subtitle.setObjectName("pageSubtitle")
+        subtitle.setWordWrap(True)
+
+        name_key = QLabel()
+        name_key.setObjectName("metaKey")
+        name_value = QLabel("-")
+        name_value.setObjectName("metaValue")
+        name_value.setWordWrap(True)
+
+        path_key = QLabel()
+        path_key.setObjectName("metaKey")
+        path_value = QLabel("-")
+        path_value.setObjectName("metaValue")
+        path_value.setWordWrap(True)
+
+        active_key = QLabel()
+        active_key.setObjectName("metaKey")
+        active_value = QLabel("-")
+        active_value.setObjectName("metaValue")
+
+        custom_props_key = None
+        custom_props_scroll = None
+        custom_props_panel = None
+        custom_props_form = None
+        custom_props_hint = None
+        if doc_type == "Draft":
+            custom_props_key = QLabel()
+            custom_props_key.setObjectName("customPropsTitle")
+
+            custom_props_panel = QFrame(page)
+            custom_props_panel.setObjectName("metaValue")
+
+            panel_layout = QVBoxLayout(custom_props_panel)
+            panel_layout.setContentsMargins(8, 8, 8, 8)
+            panel_layout.setSpacing(6)
+
+            custom_props_hint = QLabel()
+            custom_props_hint.setObjectName("pageSubtitle")
+            custom_props_hint.setWordWrap(True)
+
+            custom_props_form_host = QWidget(custom_props_panel)
+            custom_props_form = QFormLayout(custom_props_form_host)
+            custom_props_form.setContentsMargins(0, 0, 0, 0)
+            custom_props_form.setSpacing(8)
+            custom_props_form.setLabelAlignment(Qt.AlignLeft)
+            custom_props_form.setFormAlignment(Qt.AlignTop)
+
+            panel_layout.addWidget(custom_props_hint)
+            panel_layout.addWidget(custom_props_form_host)
+
+            custom_props_scroll = QScrollArea(page)
+            custom_props_scroll.setObjectName("customPropsScroll")
+            custom_props_scroll.setWidgetResizable(True)
+            custom_props_scroll.setFrameShape(QFrame.NoFrame)
+            custom_props_scroll.setMinimumHeight(200)
+            custom_props_scroll.setWidget(custom_props_panel)
+
+        action_row = QHBoxLayout()
+        action_row.setSpacing(8)
+
+        action_buttons = []
+        for _label, action_key in self.type_action_specs(doc_type):
+            action_btn = self._PushButtonClass()
+            action_btn.setObjectName("secondaryButton")
+            action_btn.setProperty("docType", doc_type)
+            action_btn.setProperty("actionKey", action_key)
+            action_row.addWidget(action_btn)
+            action_buttons.append(action_btn)
+
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
+        layout.addSpacing(6)
+        layout.addWidget(name_key)
+        layout.addWidget(name_value)
+        layout.addWidget(path_key)
+        layout.addWidget(path_value)
+        layout.addWidget(active_key)
+        layout.addWidget(active_value)
+        if custom_props_key and custom_props_scroll:
+            layout.addWidget(custom_props_key)
+            layout.addWidget(custom_props_scroll)
+        layout.addSpacing(10)
+        layout.addLayout(action_row)
+        layout.addStretch(1)
+
+        self.page_widgets[doc_type] = {
+            "name": name_value,
+            "path": path_value,
+            "active": active_value,
+            "_title": title,
+            "_subtitle": subtitle,
+            "_name_key": name_key,
+            "_path_key": path_key,
+            "_active_key": active_key,
+        }
+        if custom_props_key is not None:
+            self.page_widgets[doc_type]["_custom_props_key"] = custom_props_key
+        if custom_props_form is not None and custom_props_hint is not None:
+            self.page_widgets[doc_type]["custom_props_form"] = custom_props_form
+            self.page_widgets[doc_type]["custom_props_hint"] = custom_props_hint
+        self.action_buttons[doc_type] = action_buttons
+        return page
+
+    def _build_empty_page(self, BodyLabel: Type) -> QFrame:
+        page = QFrame(self.doc_stack)
+        page.setObjectName("emptyPage")
+
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(18, 18, 18, 18)
+
+        self._empty_title = QLabel()
+        self._empty_title.setObjectName("pageTitle")
+
+        self.empty_message = BodyLabel("")
+        self.empty_message.setObjectName("pageSubtitle")
+        self.empty_message.setWordWrap(True)
+
+        layout.addWidget(self._empty_title)
+        layout.addWidget(self.empty_message)
+        layout.addStretch(1)
+        return page
+
+    @staticmethod
+    def type_action_specs(doc_type: str) -> List[Tuple[str, str]]:
+        """Return (placeholder_label, action_key) pairs; labels are set via retranslateUi."""
+        by_type = {
+            "Part": [
+                ("", "activate"),
+                ("", "copy_name"),
+                ("", "open_folder"),
+            ],
+            "Assembly": [
+                ("", "activate"),
+                ("", "copy_path"),
+                ("", "open_folder"),
+            ],
+            "Draft": [
+                ("", "activate"),
+                ("", "save_custom_props"),
+                ("", "copy_path"),
+                ("", "open_folder"),
+            ],
+            "Unknown": [
+                ("", "activate"),
+                ("", "copy_name"),
+                ("", "open_folder"),
+            ],
+        }
+        return by_type.get(doc_type, by_type["Unknown"])
         page = QFrame(self.doc_stack)
         page.setObjectName("docPage")
 

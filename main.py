@@ -5,6 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QApplication
 
+from translations import get_saved_locale, install_translator
 from ui import ModernCADApp
 
 if __name__ == "__main__":
@@ -18,6 +19,9 @@ if __name__ == "__main__":
     # Set high DPI awareness for better rendering
     app.setAttribute(Qt.AA_EnableHighDpiScaling)
     app.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
+    # Install the saved locale translator before any UI is created.
+    install_translator(get_saved_locale())
 
     icon_path = Path(__file__).resolve().parent / "assets" / "icons" / "pyEdge001.png"
     if icon_path.exists():

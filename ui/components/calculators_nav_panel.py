@@ -2,7 +2,7 @@
 
 from typing import Type
 
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QEvent, QSize
 from PyQt5.QtWidgets import QButtonGroup, QFrame, QPushButton, QVBoxLayout
 
 
@@ -19,20 +19,20 @@ class CalculatorsNavPanel(QFrame):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(6)
 
-        nav_title = SubtitleLabel("Calculators")
-        nav_title.setObjectName("navTitle")
+        self._nav_title = SubtitleLabel()
+        self._nav_title.setObjectName("navTitle")
 
-        nav_subtitle = BodyLabel("Select a calculator.")
-        nav_subtitle.setObjectName("navSubtitle")
-        nav_subtitle.setWordWrap(True)
+        self._nav_subtitle = BodyLabel()
+        self._nav_subtitle.setObjectName("navSubtitle")
+        self._nav_subtitle.setWordWrap(True)
 
         try:
             from qfluentwidgets import FluentIcon
-            self.laser_gas_btn = QPushButton("  Laser Cutting Gas")
+            self.laser_gas_btn = QPushButton()
             self.laser_gas_btn.setIcon(FluentIcon.CALORIES.icon())
             self.laser_gas_btn.setIconSize(QSize(16, 16))
         except (ImportError, AttributeError):
-            self.laser_gas_btn = QPushButton("  Laser Cutting Gas")
+            self.laser_gas_btn = QPushButton()
 
         self.laser_gas_btn.setObjectName("utilNavButton")
         self.laser_gas_btn.setCheckable(True)
@@ -43,8 +43,22 @@ class CalculatorsNavPanel(QFrame):
         self._btn_group.setExclusive(True)
         self._btn_group.addButton(self.laser_gas_btn)
 
-        layout.addWidget(nav_title)
-        layout.addWidget(nav_subtitle)
+        layout.addWidget(self._nav_title)
+        layout.addWidget(self._nav_subtitle)
         layout.addSpacing(12)
         layout.addWidget(self.laser_gas_btn)
         layout.addStretch(1)
+
+        self.retranslateUi()
+
+    # ── i18n ─────────────────────────────────────────────────────────────────
+
+    def retranslateUi(self) -> None:
+        self._nav_title.setText(self.tr("Calculators"))
+        self._nav_subtitle.setText(self.tr("Select a calculator."))
+        self.laser_gas_btn.setText("  " + self.tr("Laser Cutting Gas"))
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)

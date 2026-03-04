@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Type
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QEvent, Qt
 from PyQt5.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -111,27 +111,12 @@ def select_assist_gas(
     return "nitrogen", "Default: nitrogen selected as the safest inert option."
 
 
-# ── Display helpers ──────────────────────────────────────────────────────────
+# ── Gas color constants ──────────────────────────────────────────────────────
 
-_GAS_DISPLAY = {
-    "oxygen": ("O₂ — Oxygen", "#ff6b6b"),
-    "nitrogen": ("N₂ — Nitrogen", "#4fc3f7"),
-    "compressed_air": ("Compressed Air", "#81c784"),
-}
-
-_GAS_DETAIL = {
-    "oxygen": (
-        "Reacts exothermically with the metal, greatly increasing effective cutting power. "
-        "Best for thick carbon steel. Leaves an oxide layer on edges."
-    ),
-    "nitrogen": (
-        "Inert gas — prevents oxidation and delivers clean, bright edges. "
-        "Required for stainless steel, aluminum, and parts that will be welded or painted."
-    ),
-    "compressed_air": (
-        "Economical blend (≈ 78 % N₂ + 21 % O₂). Intermediate quality at significantly "
-        "lower cost than pure gases. Suitable for thin sheets and non-critical edges."
-    ),
+_GAS_COLORS = {
+    "oxygen": "#ff6b6b",
+    "nitrogen": "#4fc3f7",
+    "compressed_air": "#81c784",
 }
 
 
@@ -149,16 +134,14 @@ class CalculatorsPanel(QFrame):
         root.setSpacing(0)
 
         # Header
-        title = SubtitleLabel("Laser Cutting Gas")
-        title.setObjectName("mainTitle")
-        subtitle = BodyLabel(
-            "Select material and cutting parameters to get the recommended assist gas."
-        )
-        subtitle.setObjectName("pageSubtitle")
-        subtitle.setWordWrap(True)
-        root.addWidget(title)
+        self._title_lbl = SubtitleLabel()
+        self._title_lbl.setObjectName("mainTitle")
+        self._subtitle_lbl = BodyLabel()
+        self._subtitle_lbl.setObjectName("pageSubtitle")
+        self._subtitle_lbl.setWordWrap(True)
+        root.addWidget(self._title_lbl)
         root.addSpacing(2)
-        root.addWidget(subtitle)
+        root.addWidget(self._subtitle_lbl)
         root.addSpacing(22)
 
         # ── Input card ───────────────────────────────────────────────────────
@@ -168,9 +151,9 @@ class CalculatorsPanel(QFrame):
         input_inner.setContentsMargins(20, 16, 20, 18)
         input_inner.setSpacing(12)
 
-        input_section = QLabel("Parameters")
-        input_section.setObjectName("printSectionLabel")
-        input_inner.addWidget(input_section)
+        self._params_lbl = QLabel()
+        self._params_lbl.setObjectName("printSectionLabel")
+        input_inner.addWidget(self._params_lbl)
 
         # Row 1: material + thickness
         row1 = _row_widget()
@@ -179,20 +162,18 @@ class CalculatorsPanel(QFrame):
         row1_layout.setSpacing(16)
 
         mat_col = _col()
-        _field_label("Material", mat_col)
+        self._mat_lbl = _field_label_widget("")
+        mat_col.addWidget(self._mat_lbl)
         self.material_combo = QComboBox()
         self.material_combo.setObjectName("gasCombo")
         self.material_combo.setMinimumHeight(36)
-        self.material_combo.addItems([
-            "Carbon Steel",
-            "Stainless Steel",
-            "Galvanized Steel",
-            "Aluminum",
-        ])
+        for internal_key in ("carbon_steel", "stainless_steel", "galvanized_steel", "aluminum"):
+            self.material_combo.addItem("", internal_key)
         mat_col.addWidget(self.material_combo)
 
         thick_col = _col()
-        _field_label("Thickness (mm)", thick_col)
+        self._thick_lbl = _field_label_widget("")
+        thick_col.addWidget(self._thick_lbl)
         self.thickness_spin = QDoubleSpinBox()
         self.thickness_spin.setObjectName("gasSpin")
         self.thickness_spin.setMinimumHeight(36)
@@ -214,19 +195,23 @@ class CalculatorsPanel(QFrame):
         row2_layout.setSpacing(16)
 
         eq_col = _col()
-        _field_label("Edge Quality", eq_col)
+        self._eq_lbl = _field_label_widget("")
+        eq_col.addWidget(self._eq_lbl)
         self.edge_combo = QComboBox()
         self.edge_combo.setObjectName("gasCombo")
         self.edge_combo.setMinimumHeight(36)
-        self.edge_combo.addItems(["High", "Medium", "Low"])
+        for internal_key in ("high", "medium", "low"):
+            self.edge_combo.addItem("", internal_key)
         eq_col.addWidget(self.edge_combo)
 
         pp_col = _col()
-        _field_label("Post-Process", pp_col)
+        self._pp_lbl = _field_label_widget("")
+        pp_col.addWidget(self._pp_lbl)
         self.post_combo = QComboBox()
         self.post_combo.setObjectName("gasCombo")
         self.post_combo.setMinimumHeight(36)
-        self.post_combo.addItems(["None", "Welding", "Painting"])
+        for internal_key in ("none", "welding", "painting"):
+            self.post_combo.addItem("", internal_key)
         pp_col.addWidget(self.post_combo)
 
         row2_layout.addLayout(eq_col, 1)
@@ -239,12 +224,12 @@ class CalculatorsPanel(QFrame):
         row3_layout.setContentsMargins(0, 0, 0, 0)
         row3_layout.setSpacing(16)
 
-        self.cost_check = QCheckBox("Prioritize cost reduction")
+        self.cost_check = QCheckBox()
         self.cost_check.setObjectName("gasCheck")
         row3_layout.addWidget(self.cost_check)
         row3_layout.addStretch(1)
 
-        self.calc_btn = QPushButton("Calculate")
+        self.calc_btn = QPushButton()
         self.calc_btn.setObjectName("gasCalcBtn")
         self.calc_btn.setMinimumHeight(38)
         self.calc_btn.setMinimumWidth(120)
@@ -263,9 +248,9 @@ class CalculatorsPanel(QFrame):
         result_inner.setContentsMargins(20, 18, 20, 18)
         result_inner.setSpacing(10)
 
-        result_header = QLabel("Recommended Gas")
-        result_header.setObjectName("printSectionLabel")
-        result_inner.addWidget(result_header)
+        self._result_header = QLabel()
+        self._result_header.setObjectName("printSectionLabel")
+        result_inner.addWidget(self._result_header)
 
         self.gas_name_label = QLabel("")
         self.gas_name_label.setObjectName("gasResultName")
@@ -281,9 +266,9 @@ class CalculatorsPanel(QFrame):
         separator.setFrameShape(QFrame.HLine)
         result_inner.addWidget(separator)
 
-        reason_header = QLabel("Reasoning")
-        reason_header.setObjectName("gasReasonHeader")
-        result_inner.addWidget(reason_header)
+        self._reason_header = QLabel()
+        self._reason_header.setObjectName("gasReasonHeader")
+        result_inner.addWidget(self._reason_header)
 
         self.reason_label = QLabel("")
         self.reason_label.setObjectName("gasReason")
@@ -293,40 +278,99 @@ class CalculatorsPanel(QFrame):
         root.addWidget(self.result_card)
         root.addStretch(1)
 
-        # Trigger once so result shows immediately on first view if desired
+        self.retranslateUi()
+        # Trigger once so result shows immediately on first view.
         self._calculate()
+
+    # ── i18n ─────────────────────────────────────────────────────────────────
+
+    def retranslateUi(self) -> None:
+        self._title_lbl.setText(self.tr("Laser Cutting Gas"))
+        self._subtitle_lbl.setText(
+            self.tr("Select material and cutting parameters to get the recommended assist gas.")
+        )
+        self._params_lbl.setText(self.tr("Parameters"))
+        self._mat_lbl.setText(self.tr("Material"))
+        self._thick_lbl.setText(self.tr("Thickness (mm)"))
+        self._eq_lbl.setText(self.tr("Edge Quality"))
+        self._pp_lbl.setText(self.tr("Post-Process"))
+        self.cost_check.setText(self.tr("Prioritize cost reduction"))
+        self.calc_btn.setText(self.tr("Calculate"))
+        self._result_header.setText(self.tr("Recommended Gas"))
+        self._reason_header.setText(self.tr("Reasoning"))
+
+        # Update combo item texts while preserving internal data.
+        for i, text in enumerate([self.tr("Carbon Steel"), self.tr("Stainless Steel"),
+                                   self.tr("Galvanized Steel"), self.tr("Aluminum")]):
+            self.material_combo.setItemText(i, text)
+        for i, text in enumerate([self.tr("High"), self.tr("Medium"), self.tr("Low")]):
+            self.edge_combo.setItemText(i, text)
+        for i, text in enumerate([self.tr("None"), self.tr("Welding"), self.tr("Painting")]):
+            self.post_combo.setItemText(i, text)
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
+    # ── Internal helpers ─────────────────────────────────────────────────────
+
+    def _gas_display_name(self, gas_key: str) -> str:
+        """Return translated gas display name."""
+        if gas_key == "oxygen":
+            return self.tr("O₂ — Oxygen")
+        elif gas_key == "nitrogen":
+            return self.tr("N₂ — Nitrogen")
+        elif gas_key == "compressed_air":
+            return self.tr("Compressed Air")
+        return ""
+
+    def _gas_description(self, gas_key: str) -> str:
+        """Return translated gas description."""
+        if gas_key == "oxygen":
+            return self.tr(
+                "Reacts exothermically with the metal, greatly increasing effective cutting power. "
+                "Best for thick carbon steel. Leaves an oxide layer on edges."
+            )
+        elif gas_key == "nitrogen":
+            return self.tr(
+                "Inert gas — prevents oxidation and delivers clean, bright edges. "
+                "Required for stainless steel, aluminum, and parts that will be welded or painted."
+            )
+        elif gas_key == "compressed_air":
+            return self.tr(
+                "Economical blend (≈ 78 % N₂ + 21 % O₂). Intermediate quality at significantly "
+                "lower cost than pure gases. Suitable for thin sheets and non-critical edges."
+            )
+        return ""
 
     # ── Internal helpers ─────────────────────────────────────────────────────
 
     def _calculate(self) -> None:
-        material_map = {
-            "Carbon Steel": "carbon_steel",
-            "Stainless Steel": "stainless_steel",
-            "Galvanized Steel": "galvanized_steel",
-            "Aluminum": "aluminum",
-        }
-        edge_map = {"High": "high", "Medium": "medium", "Low": "low"}
-        post_map = {"None": "none", "Welding": "welding", "Painting": "painting"}
-
-        material = material_map[self.material_combo.currentText()]
+        # Internal keys are stored as item data — translation-safe.
+        material = self.material_combo.currentData()
         thickness = self.thickness_spin.value()
-        edge_quality = edge_map[self.edge_combo.currentText()]
-        post_process = post_map[self.post_combo.currentText()]
+        edge_quality = self.edge_combo.currentData()
+        post_process = self.post_combo.currentData()
         cost_priority = self.cost_check.isChecked()
+
+        if not material or not edge_quality or not post_process:
+            return
 
         gas_key, reason = select_assist_gas(
             material, thickness, edge_quality, post_process, cost_priority
         )
 
-        gas_display, gas_color = _GAS_DISPLAY[gas_key]
-        gas_desc = _GAS_DETAIL[gas_key]
+        gas_display = self._gas_display_name(gas_key)
+        gas_color = _GAS_COLORS[gas_key]
+        gas_desc = self._gas_description(gas_key)
 
         self.gas_name_label.setText(gas_display)
         self.gas_name_label.setStyleSheet(
             f"color: {gas_color}; font-size: 22px; font-weight: 700; letter-spacing: 0.3px;"
         )
         self.gas_desc_label.setText(gas_desc)
-        self.reason_label.setText(reason)
+        self.reason_label.setText(self.tr(reason))
         self.result_card.setVisible(True)
 
 
@@ -345,7 +389,7 @@ def _col() -> QVBoxLayout:
     return lay
 
 
-def _field_label(text: str, layout: QVBoxLayout) -> None:
+def _field_label_widget(text: str) -> QLabel:
     lbl = QLabel(text)
     lbl.setObjectName("printFieldLabel")
-    layout.addWidget(lbl)
+    return lbl

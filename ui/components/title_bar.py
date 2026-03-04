@@ -1,7 +1,7 @@
 """Custom frameless title bar component with vector icons."""
 
 from pathlib import Path
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QEvent, QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton
 
@@ -37,7 +37,6 @@ class TitleBar(QFrame):
         self.min_btn.setIcon(minimize_icon)
         self.min_btn.setFixedSize(42, 30)
         self.min_btn.setIconSize(QSize(16, 16))
-        self.min_btn.setToolTip("Minimize")
 
         self.max_btn = QToolButton(self)
         self.max_btn.setObjectName("maxBtn")
@@ -46,14 +45,12 @@ class TitleBar(QFrame):
         self._restore_icon = QIcon(str(icons_dir / "restore.svg"))
         self.max_btn.setFixedSize(42, 30)
         self.max_btn.setIconSize(QSize(16, 16))
-        self.max_btn.setToolTip("Maximize")
 
         self.close_btn = QToolButton(self)
         self.close_btn.setObjectName("closeBtn")
         self.close_btn.setIcon(close_icon)
         self.close_btn.setFixedSize(42, 30)
         self.close_btn.setIconSize(QSize(16, 16))
-        self.close_btn.setToolTip("Close")
 
         layout.addWidget(self.window_icon_label)
         layout.addWidget(self.window_title_label)
@@ -62,12 +59,28 @@ class TitleBar(QFrame):
         layout.addWidget(self.max_btn)
         layout.addWidget(self.close_btn)
 
+        self.retranslateUi()
+
+    # ── i18n ───────────────────────────────────────────────────────────────
+
+    def retranslateUi(self) -> None:
+        self.min_btn.setToolTip(self.tr("Minimize"))
+        self.max_btn.setToolTip(self.tr("Maximize"))
+        self.close_btn.setToolTip(self.tr("Close"))
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
     def set_maximize_state(self, is_maximized: bool) -> None:
-        """Update the maximize button icon based on window state."""
+        """Update the maximize button icon and tooltip based on window state."""
         if is_maximized:
             self.max_btn.setIcon(self._restore_icon)
+            self.max_btn.setToolTip(self.tr("Restore"))
         else:
             self.max_btn.setIcon(self._maximize_icon)
+            self.max_btn.setToolTip(self.tr("Maximize"))
 
     def set_app_icon(self, icon: QIcon) -> None:
         """Render the provided window icon in the custom title bar."""
