@@ -1,0 +1,111 @@
+{
+	"gases": [
+		"oxygen",
+		"nitrogen",
+		"compressed_air"
+	],
+	"weights": {
+		"material": 5,
+		"thickness": 3,
+		"edge_quality": 4,
+		"post_processing": 3,
+		"cost_priority": 1
+	},
+	"rules": {
+		"material": {
+			"carbon_steel": {
+				"oxygen": 5,
+				"nitrogen": 2,
+				"compressed_air": 2
+			},
+			"stainless_steel": {
+				"oxygen": -3,
+				"nitrogen": 5,
+				"compressed_air": 2
+			},
+			"aluminum": {
+				"oxygen": -4,
+				"nitrogen": 5,
+				"compressed_air": 2
+			},
+			"other": {
+				"oxygen": 1,
+				"nitrogen": 3,
+				"compressed_air": 2
+			}
+		},
+		"thickness": {
+			"<=3": {
+				"oxygen": 1,
+				"nitrogen": 3,
+				"compressed_air": 4
+			},
+			"3-6": {
+				"oxygen": 2,
+				"nitrogen": 3,
+				"compressed_air": 3
+			},
+			"6-12": {
+				"oxygen": 5,
+				"nitrogen": 2,
+				"compressed_air": -2
+			},
+			">12": {
+				"oxygen": 5,
+				"nitrogen": 1,
+				"compressed_air": -4
+			}
+		},
+		"edge_quality": {
+			"high": {
+				"oxygen": -2,
+				"nitrogen": 5,
+				"compressed_air": 1
+			},
+			"medium": {
+				"oxygen": 2,
+				"nitrogen": 3,
+				"compressed_air": 2
+			},
+			"low": {
+				"oxygen": 3,
+				"nitrogen": 1,
+				"compressed_air": 4
+			}
+		},
+		"post_processing": {
+			"welding": {
+				"oxygen": -3,
+				"nitrogen": 4,
+				"compressed_air": 1
+			},
+			"painting": {
+				"oxygen": -2,
+				"nitrogen": 3,
+				"compressed_air": 2
+			},
+			"none": {
+				"oxygen": 3,
+				"nitrogen": 2,
+				"compressed_air": 2
+			}
+		},
+		"cost_priority": {
+			"high": {
+				"oxygen": 2,
+				"nitrogen": -2,
+				"compressed_air": 5
+			},
+			"medium": {
+				"oxygen": 2,
+				"nitrogen": 2,
+				"compressed_air": 3
+			},
+			"low": {
+				"oxygen": 1,
+				"nitrogen": 4,
+				"compressed_air": 1
+			}
+		}
+	}
+}

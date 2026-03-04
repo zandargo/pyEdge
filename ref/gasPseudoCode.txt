@@ -1,0 +1,54 @@
+import json
+
+def get_thickness_range(t):
+    if t <= 3:
+        return "<=3"
+    elif t <= 6:
+        return "3-6"
+    elif t <= 12:
+        return "6-12"
+    else:
+        return ">12"
+
+
+def score_gases(data, rules):
+
+    scores = {
+        "oxygen": 0,
+        "nitrogen": 0,
+        "compressed_air": 0
+    }
+
+    weights = rules["weights"]
+
+    # MATERIAL
+    material_scores = rules["rules"]["material"][data["material"]]
+    for gas in scores:
+        scores[gas] += material_scores[gas] * weights["material"]
+
+    # THICKNESS
+    tr = get_thickness_range(data["thickness_mm"])
+    thickness_scores = rules["rules"]["thickness"][tr]
+    for gas in scores:
+        scores[gas] += thickness_scores[gas] * weights["thickness"]
+
+    # EDGE QUALITY
+    eq_scores = rules["rules"]["edge_quality"][data["edge_quality"]]
+    for gas in scores:
+        scores[gas] += eq_scores[gas] * weights["edge_quality"]
+
+    # POST PROCESSING
+    pp_scores = rules["rules"]["post_processing"][data["post_processing"]]
+    for gas in scores:
+        scores[gas] += pp_scores[gas] * weights["post_processing"]
+
+    # COST
+    cost_scores = rules["rules"]["cost_priority"][data["cost_priority"]]
+    for gas in scores:
+        scores[gas] += cost_scores[gas] * weights["cost_priority"]
+
+    return scores
+
+
+def choose_gas(scores):
+    return max(scores, key=scores.get)
