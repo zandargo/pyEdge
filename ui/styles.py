@@ -501,6 +501,66 @@ QLabel#gasReason {
     font-size: 13px;
     line-height: 1.5;
 }
+
+/* ── Gas scoring result widgets ─────────────────────────────────────────── */
+QFrame#gasRankRow {
+    background-color: rgba(255, 255, 255, 5);
+    border: 1px solid rgba(255, 255, 255, 10);
+    border-radius: 8px;
+}
+QLabel#gasRankName {
+    font-size: 13px;
+    font-weight: 700;
+}
+QLabel#gasRankScore {
+    color: #c4d4f0;
+    font-size: 13px;
+    font-weight: 600;
+}
+QProgressBar#gasScoreBar {
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px solid rgba(255, 255, 255, 14);
+    border-radius: 4px;
+}
+QProgressBar#gasScoreBar::chunk {
+    border-radius: 3px;
+}
+QTableWidget#gasFactorTable {
+    background-color: rgba(10, 16, 26, 180);
+    border: 1px solid rgba(255, 255, 255, 16);
+    border-radius: 10px;
+    color: #dde8ff;
+    gridline-color: rgba(255, 255, 255, 14);
+    font-size: 15px;
+    font-weight: 700;
+}
+QTableWidget#gasFactorTable QHeaderView::section {
+    background-color: rgba(20, 30, 48, 220);
+    color: #89a0c4;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 20);
+    padding: 6px 4px;
+}
+QTableWidget#gasFactorTable QHeaderView::section:vertical {
+    color: #7a91b8;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    padding-left: 10px;
+    border-right: 1px solid rgba(255, 255, 255, 20);
+}
+QTableWidget#gasFactorTable::item {
+    border: none;
+}
+QTableWidget#gasFactorTable QTableCornerButton::section {
+    background-color: rgba(20, 30, 48, 220);
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 20);
+    border-right: 1px solid rgba(255, 255, 255, 20);
+}
 QPushButton#printSearchBtn:disabled {
     background-color: rgba(45, 140, 255, 50);
     color: rgba(255, 255, 255, 90);

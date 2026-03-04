@@ -265,19 +265,55 @@
     </message>
     <message>
         <source>Recommended Gas</source>
-        <translation>Gás Recomendado</translation>
+        <translation type="obsolete">Gás Recomendado</translation>
     </message>
     <message>
         <source>Reasoning</source>
-        <translation>Raciocínio</translation>
+        <translation type="obsolete">Raciocínio</translation>
     </message>
     <message>
         <source>O₂ — Oxygen</source>
-        <translation>O₂ — Oxigênio</translation>
+        <translation type="obsolete">O₂ — Oxigênio</translation>
     </message>
     <message>
         <source>N₂ — Nitrogen</source>
-        <translation>N₂ — Nitrogênio</translation>
+        <translation type="obsolete">N₂ — Nitrogênio</translation>
+    </message>
+    <message>
+        <source>Score Ranking</source>
+        <translation>Classificação por Pontuação</translation>
+    </message>
+    <message>
+        <source>Factor Analysis</source>
+        <translation>Análise de Fatores</translation>
+    </message>
+    <message>
+        <source>O₂  Oxygen</source>
+        <translation>O₂  Oxigênio</translation>
+    </message>
+    <message>
+        <source>N₂  Nitrogen</source>
+        <translation>N₂  Nitrogênio</translation>
+    </message>
+    <message>
+        <source>Material: </source>
+        <translation>Material: </translation>
+    </message>
+    <message>
+        <source>Thickness: </source>
+        <translation>Espessura: </translation>
+    </message>
+    <message>
+        <source>Edge Quality: </source>
+        <translation>Qualidade da Borda: </translation>
+    </message>
+    <message>
+        <source>Post-Process: </source>
+        <translation>Pós-Processamento: </translation>
+    </message>
+    <message>
+        <source>Cost Priority: </source>
+        <translation>Prioridade de Custo: </translation>
     </message>
     <message>
         <source>Compressed Air</source>

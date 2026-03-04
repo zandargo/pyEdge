@@ -109,18 +109,51 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/calculators_panel.py" line="321"/>
         <source>O₂ — Oxygen</source>
-        <translation type="unfinished"></translation>
+        <translation type="obsolete"></translation>
     </message>
     <message>
-        <location filename="../ui/components/calculators_panel.py" line="323"/>
         <source>N₂ — Nitrogen</source>
+        <translation type="obsolete"></translation>
+    </message>
+    <message>
+        <source>Compressed Air</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/calculators_panel.py" line="325"/>
-        <source>Compressed Air</source>
+        <source>Score Ranking</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Factor Analysis</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>O₂  Oxygen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>N₂  Nitrogen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Material: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Thickness: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Edge Quality: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Post-Process: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cost Priority: </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
