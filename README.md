@@ -75,6 +75,52 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Building the Executable 📦
+
+You can package pyEdge into a standalone Windows executable using **PyInstaller**.  
+The `pyedge.spec` file at the project root already has all the correct settings.
+
+### Prerequisites
+
+- Virtual environment activated (see Quick Start above)
+- All dependencies installed (`pip install -r requirements.txt`)
+
+### Build (one-folder distribution — recommended)
+
+```powershell
+pyinstaller pyedge.spec
+```
+
+This creates a `dist\pyEdge\` folder containing `pyEdge.exe` plus all required DLLs and data files. Ship the entire `dist\pyEdge\` folder.
+
+### Output location
+
+```
+dist/
+└── pyEdge/
+    ├── pyEdge.exe       ← launch this
+    ├── assets/
+    ├── ref/
+    ├── translations/
+    └── ...              ← bundled runtimes / Qt plugins
+```
+
+### Clean previous builds
+
+```powershell
+Remove-Item -Recurse -Force build, dist
+```
+
+### Notes
+
+| Topic | Detail |
+|---|---|
+| **Solid Edge** | Must be installed on the target machine — pyEdge communicates with it via COM, which cannot be bundled |
+| **Antivirus false positives** | PyInstaller executables are sometimes flagged by AV software; you may need to add an exception for `dist\pyEdge\pyEdge.exe` |
+| **UPX compression** | The spec enables UPX if it is on your `PATH`; install it from [upx.github.io](https://upx.github.io) to reduce file size, or set `upx=False` in the spec to skip it |
+| **Console window** | The spec sets `console=False` — no black terminal window will appear when launching the app |
+| **Icon** | `assets/icons/pyEdge001.png` is used as the application icon; PyInstaller 6+ converts it to `.ico` automatically |
+
 ## Project Layout 🗂️
 
 ```text

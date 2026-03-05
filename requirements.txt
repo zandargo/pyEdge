@@ -1,3 +1,8 @@
+# Runtime
 PyQt5
 PyQt-Fluent-Widgets
 pywin32
+
+# Build / packaging
+pyinstaller
+pillow          # required to convert PNG → ICO for the Windows executable icon
