@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import (
 
 from models import DocumentInfo
 from services.solid_edge import disconnect_from_solid_edge
-from ui.components import CalculatorsNavPanel, CalculatorsPanel, DocumentPanel, NavigationPanel, SettingsPanel, TitleBar, UtilitiesNavPanel, PrintingPanel
+from ui.components import CalculatorsNavPanel, CalculatorsPanel, DocumentPanel, NavigationPanel, SettingsPanel, SheetMetalWeightPanel, TitleBar, UtilitiesNavPanel, PrintingPanel
 from ui.styles import APP_STYLESHEET
 from workers import PrintingWorker, SolidEdgeWorker
 
@@ -223,10 +223,18 @@ class ModernCADApp(QWidget):
 
         self.calculators_nav_panel = CalculatorsNavPanel(SubtitleLabel, BodyLabel, PushButton, self.calculators_container)
         self.calculators_panel = CalculatorsPanel(SubtitleLabel, BodyLabel, self.calculators_container)
+        self.sheet_metal_weight_panel = SheetMetalWeightPanel(SubtitleLabel, BodyLabel, self.calculators_container)
+
+        from PyQt5.QtWidgets import QStackedWidget as _QStackedWidget
+        self._calc_stack = _QStackedWidget(self.calculators_container)
+        self._calc_stack.addWidget(self.calculators_panel)        # index 0
+        self._calc_stack.addWidget(self.sheet_metal_weight_panel) # index 1
 
         calculators_layout.addWidget(self.calculators_nav_panel)
-        calculators_layout.addWidget(self.calculators_panel, 1)
+        calculators_layout.addWidget(self._calc_stack, 1)
         self.content_stack.addWidget(self.calculators_container)
+
+        self.calculators_nav_panel.calculator_changed.connect(self._calc_stack.setCurrentIndex)
 
         # Utilities workspace (index 2)
         self.utilities_container = QtWidget()

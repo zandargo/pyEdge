@@ -172,4 +172,120 @@
         <translation type="unfinished"></translation>
     </message>
 </context>
+
+<context>
+    <name>CalculatorsNavPanel</name>
+    <message>
+        <source>Calculators</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select a calculator.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Laser Cutting Gas</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sheet Metal Weight</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+
+<context>
+    <name>SheetMetalWeightPanel</name>
+    <message>
+        <source>Sheet Metal Weight</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select material, thickness and area to calculate the sheet metal weight.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Material &amp; Thickness</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Material</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Thickness (mm)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Manual (Width × Height)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DXF File</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Browse…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No file selected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Open DXF File</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DXF Files (*.dxf);;All Files (*)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Results</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Weight</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>kg / m²</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stainless Steel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Carbon Steel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Galvanized Steel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Aluminum</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
 </TS>

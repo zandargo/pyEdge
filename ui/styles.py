@@ -640,4 +640,112 @@ QLabel#printStatus {
     color: #7a91b8;
     font-size: 14px;
 }
+
+/* ── Sheet Metal Weight calculator ─────────────────────────────────────── */
+QDoubleSpinBox#smwSpin {
+    color: #dde8ff;
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px solid rgba(183, 213, 255, 60);
+    border-radius: 8px;
+    padding: 0px 8px;
+}
+QDoubleSpinBox#smwSpin:hover {
+    border-color: rgba(183, 213, 255, 110);
+}
+QDoubleSpinBox#smwSpin:focus {
+    border-color: rgba(45, 140, 255, 180);
+}
+QDoubleSpinBox#smwSpin::up-button,
+QDoubleSpinBox#smwSpin::down-button {
+    background: transparent;
+    border: none;
+    width: 16px;
+}
+QListWidget#smwThickList {
+    background-color: rgba(255, 255, 255, 6);
+    border: 1px solid rgba(255, 255, 255, 14);
+    border-radius: 10px;
+    color: #d9e3f6;
+    padding: 4px;
+    outline: none;
+}
+QListWidget#smwThickList::item {
+    border-radius: 7px;
+    padding: 7px 8px;
+    margin: 2px;
+    color: #d9e3f6;
+}
+QListWidget#smwThickList::item:hover:!selected {
+    background-color: rgba(255, 255, 255, 8);
+    color: #d9e3f6;
+}
+QListWidget#smwThickList::item:selected,
+QListWidget#smwThickList::item:selected:active,
+QListWidget#smwThickList::item:selected:!active {
+    background-color: rgba(45, 140, 255, 80);
+    border: 1px solid rgba(45, 140, 255, 140);
+    color: #ffffff;
+    font-weight: 700;
+}
+QRadioButton#smwRadio {
+    color: #c4d4f0;
+    font-size: 13px;
+    font-weight: 600;
+    spacing: 8px;
+}
+QRadioButton#smwRadio::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(183, 213, 255, 80);
+    background-color: rgba(255, 255, 255, 8);
+}
+QRadioButton#smwRadio::indicator:checked {
+    background-color: rgba(45, 140, 255, 200);
+    border-color: rgba(45, 140, 255, 220);
+}
+QLineEdit#smwDxfInput {
+    color: #dde8ff;
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px solid rgba(183, 213, 255, 60);
+    border-radius: 8px;
+    padding: 0px 10px;
+}
+QLineEdit#smwDxfInput:focus {
+    border-color: rgba(45, 140, 255, 180);
+}
+QPushButton#smwBrowseBtn {
+    background-color: rgba(45, 140, 255, 150);
+    color: #ffffff;
+    border: 1px solid rgba(45, 140, 255, 190);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+}
+QPushButton#smwBrowseBtn:hover {
+    background-color: rgba(45, 140, 255, 210);
+}
+QFrame#smwResultCard {
+    background-color: rgba(10, 16, 26, 200);
+    border: 1px solid rgba(255, 255, 255, 16);
+    border-radius: 12px;
+}
+QFrame#smwResultTile {
+    background-color: rgba(255, 255, 255, 6);
+    border: 1px solid rgba(255, 255, 255, 14);
+    border-radius: 10px;
+}
+QLabel#smwResultKey {
+    color: #7a91b8;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+QLabel#smwResultVal {
+    color: #eef4ff;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
 """

@@ -5,8 +5,9 @@ from .calculators_panel import CalculatorsPanel
 from .document_panel import DocumentPanel
 from .navigation_panel import NavigationPanel
 from .settings_panel import SettingsPanel
+from .sheet_metal_weight_panel import SheetMetalWeightPanel
 from .title_bar import TitleBar
 from .utilities_nav_panel import UtilitiesNavPanel
 from .printing_panel import PrintingPanel
 
-__all__ = ["TitleBar", "NavigationPanel", "DocumentPanel", "CalculatorsNavPanel", "CalculatorsPanel", "UtilitiesNavPanel", "PrintingPanel", "SettingsPanel"]
+__all__ = ["TitleBar", "NavigationPanel", "DocumentPanel", "CalculatorsNavPanel", "CalculatorsPanel", "SheetMetalWeightPanel", "UtilitiesNavPanel", "PrintingPanel", "SettingsPanel"]

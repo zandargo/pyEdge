@@ -43,6 +43,10 @@
         <source>Laser Cutting Gas</source>
         <translation>Gás de Corte a Laser</translation>
     </message>
+    <message>
+        <source>Sheet Metal Weight</source>
+        <translation>Peso de Chapa Metálica</translation>
+    </message>
 </context>
 
 <context>
@@ -554,6 +558,102 @@
     <message>
         <source>Maximize</source>
         <translation>Maximizar</translation>
+    </message>
+</context>
+
+<context>
+    <name>SheetMetalWeightPanel</name>
+    <message>
+        <source>Sheet Metal Weight</source>
+        <translation>Peso de Chapa Metálica</translation>
+    </message>
+    <message>
+        <source>Select material, thickness and area to calculate the sheet metal weight.</source>
+        <translation>Selecione o material, espessura e área para calcular o peso da chapa metálica.</translation>
+    </message>
+    <message>
+        <source>Material &amp; Thickness</source>
+        <translation>Material e Espessura</translation>
+    </message>
+    <message>
+        <source>Material</source>
+        <translation>Material</translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation>Densidade</translation>
+    </message>
+    <message>
+        <source>Thickness (mm)</source>
+        <translation>Espessura (mm)</translation>
+    </message>
+    <message>
+        <source>Area</source>
+        <translation>Área</translation>
+    </message>
+    <message>
+        <source>Manual (Width × Height)</source>
+        <translation>Manual (Largura × Altura)</translation>
+    </message>
+    <message>
+        <source>DXF File</source>
+        <translation>Arquivo DXF</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Largura</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Altura</translation>
+    </message>
+    <message>
+        <source>Browse…</source>
+        <translation>Procurar…</translation>
+    </message>
+    <message>
+        <source>No file selected</source>
+        <translation>Nenhum arquivo selecionado</translation>
+    </message>
+    <message>
+        <source>Open DXF File</source>
+        <translation>Abrir Arquivo DXF</translation>
+    </message>
+    <message>
+        <source>DXF Files (*.dxf);;All Files (*)</source>
+        <translation>Arquivos DXF (*.dxf);;Todos os Arquivos (*)</translation>
+    </message>
+    <message>
+        <source>Results</source>
+        <translation>Resultados</translation>
+    </message>
+    <message>
+        <source>Weight</source>
+        <translation>Peso</translation>
+    </message>
+    <message>
+        <source>kg / m²</source>
+        <translation>kg / m²</translation>
+    </message>
+    <message>
+        <source>Stainless Steel</source>
+        <translation>Aço Inoxidável</translation>
+    </message>
+    <message>
+        <source>Carbon Steel</source>
+        <translation>Aço Carbono</translation>
+    </message>
+    <message>
+        <source>Galvanized Steel</source>
+        <translation>Aço Galvanizado</translation>
+    </message>
+    <message>
+        <source>Aluminum</source>
+        <translation>Alumínio</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Outro</translation>
     </message>
 </context>
 

@@ -1,0 +1,103 @@
+{
+	"materials": {
+		"stainless_steel": {
+			"label": "Stainless Steel",
+			"density_kg_m3": 7960,
+			"thickness_mm": [
+				0.6,
+				0.8,
+				1.0,
+				1.2,
+				1.5,
+				2.0,
+				2.5,
+				3.0,
+				4.0,
+				5.0,
+				6.0,
+				7.94,
+				9.53,
+				12.7,
+				15.88
+			]
+		},
+		"carbon_steel": {
+			"label": "Carbon Steel",
+			"density_kg_m3": 7860,
+			"thickness_mm": [
+				0.45,
+				0.75,
+				0.9,
+				1.2,
+				1.5,
+				1.9,
+				2.0,
+				2.25,
+				2.65,
+				3.0,
+				3.17,
+				3.75,
+				4.25,
+				4.76,
+				6.35,
+				7.94,
+				9.53,
+				12.7,
+				15.88,
+				19.05
+			]
+		},
+		"galvanized_steel": {
+			"label": "Galvanized Steel",
+			"density_kg_m3": 7860,
+			"thickness_mm": [
+				0.43,
+				0.65,
+				0.80,
+				0.95,
+				1.25,
+				1.55,
+				1.95
+			]
+		},
+		"aluminum": {
+			"label": "Aluminum",
+			"density_kg_m3": 2700,
+			"thickness_mm": [
+				1.0,
+				1.2,
+				1.5,
+				2.0,
+				2.5,
+				3.0,
+				4.0,
+				5.0,
+				6.0,
+				8.0,
+				10
+			]
+		},
+		"other": {
+			"label": "Other",
+			"density_kg_m3": 1000,
+			"thickness_mm": [
+				0.5,
+				1.0,
+				1.5,
+				2.0,
+				2.5,
+				3.0,
+				4.0,
+				5.0,
+				6.0,
+				8.0,
+				10.0,
+				12.0
+			]
+		}
+	},
+	"defaults": {
+		"width_mm": 3000,
+		"height_mm": 1500
+	}
+}
