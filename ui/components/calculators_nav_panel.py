@@ -45,7 +45,7 @@ class CalculatorsNavPanel(QFrame):
         try:
             from qfluentwidgets import FluentIcon
             self.sheet_metal_btn = QPushButton()
-            self.sheet_metal_btn.setIcon(FluentIcon.WEIGHT.icon())
+            self.sheet_metal_btn.setIcon(FluentIcon.TILES.icon())
             self.sheet_metal_btn.setIconSize(QSize(16, 16))
         except (ImportError, AttributeError):
             self.sheet_metal_btn = QPushButton()

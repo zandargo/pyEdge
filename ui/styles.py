@@ -292,9 +292,9 @@ QPushButton#utilNavButton {
     text-align: left;
     padding: 10px 14px;
     border-radius: 10px;
-    border: 1px solid transparent;
-    background-color: rgba(45, 140, 255, 55);
-    color: #e8f0ff;
+    border: 1px solid rgba(255, 255, 255, 16);
+    background-color: rgba(255, 255, 255, 12);
+    color: #d0dcf5;
     font-size: 14px;
     font-weight: 600;
 }
@@ -304,9 +304,9 @@ QPushButton#utilNavButton:checked {
     color: #ffffff;
 }
 QPushButton#utilNavButton:hover:!checked {
-    background-color: rgba(255, 255, 255, 12);
-    border: 1px solid rgba(255, 255, 255, 16);
-    color: #d0dcf5;
+    background-color: rgba(45, 140, 255, 55);
+    border: 1px solid transparent;
+    color: #e8f0ff;
 }
 
 /* ── Printing panel ────────────────────────────────────────────────────── */
@@ -711,6 +711,12 @@ QLineEdit#smwDxfInput {
     border-radius: 8px;
     padding: 0px 10px;
 }
+QLabel#smwComingSoon {
+    color: #eab308;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+}
 QLineEdit#smwDxfInput:focus {
     border-color: rgba(45, 140, 255, 180);
 }
@@ -734,6 +740,10 @@ QFrame#smwResultTile {
     background-color: rgba(255, 255, 255, 6);
     border: 1px solid rgba(255, 255, 255, 14);
     border-radius: 10px;
+}
+QFrame#smwResultTile:hover {
+    background-color: rgba(45, 140, 255, 30);
+    border: 1px solid rgba(45, 140, 255, 80);
 }
 QLabel#smwResultKey {
     color: #7a91b8;

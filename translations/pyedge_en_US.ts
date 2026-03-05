@@ -287,5 +287,13 @@
         <source>Other</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Value copied to clipboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Coming soon…</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>

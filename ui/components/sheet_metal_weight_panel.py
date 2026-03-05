@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import locale
 from pathlib import Path
-from typing import Type
+from typing import Optional, Type
 
-from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtCore import QEvent, QPoint, Qt, QTimer
 from PyQt5.QtWidgets import (
     QAbstractItemView,
+    QApplication,
     QButtonGroup,
     QComboBox,
     QDoubleSpinBox,
@@ -23,6 +25,7 @@ from PyQt5.QtWidgets import (
     QRadioButton,
     QSizePolicy,
     QStackedWidget,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -197,9 +200,19 @@ class SheetMetalWeightPanel(QFrame):
         # Page 1 – DXF file picker
         dxf_page = QWidget()
         dxf_page.setStyleSheet("background: transparent;")
-        dxf_layout = QHBoxLayout(dxf_page)
+        dxf_layout = QVBoxLayout(dxf_page)
         dxf_layout.setContentsMargins(0, 0, 0, 0)
-        dxf_layout.setSpacing(10)
+        dxf_layout.setSpacing(6)
+
+        self._dxf_coming_soon_lbl = QLabel()
+        self._dxf_coming_soon_lbl.setObjectName("smwComingSoon")
+        dxf_layout.addWidget(self._dxf_coming_soon_lbl)
+
+        dxf_row = QWidget()
+        dxf_row.setStyleSheet("background: transparent;")
+        dxf_row_layout = QHBoxLayout(dxf_row)
+        dxf_row_layout.setContentsMargins(0, 0, 0, 0)
+        dxf_row_layout.setSpacing(10)
 
         self.dxf_path_edit = QLineEdit()
         self.dxf_path_edit.setObjectName("smwDxfInput")
@@ -213,8 +226,9 @@ class SheetMetalWeightPanel(QFrame):
         self.dxf_browse_btn.setMinimumWidth(100)
         self.dxf_browse_btn.clicked.connect(self._browse_dxf)
 
-        dxf_layout.addWidget(self.dxf_path_edit, 1)
-        dxf_layout.addWidget(self.dxf_browse_btn)
+        dxf_row_layout.addWidget(self.dxf_path_edit, 1)
+        dxf_row_layout.addWidget(self.dxf_browse_btn)
+        dxf_layout.addWidget(dxf_row)
         self._area_stack.addWidget(dxf_page)
 
         area_inner.addWidget(self._area_stack)
@@ -238,19 +252,19 @@ class SheetMetalWeightPanel(QFrame):
         result_values_layout.setContentsMargins(0, 0, 0, 0)
         result_values_layout.setSpacing(12)
 
-        self._area_result_card = _result_tile()
+        self._area_result_card = _ResultTile(self)
         self._area_result_key = _result_key_label("")
         self._area_result_val = _result_val_label("—")
         self._area_result_card.layout().addWidget(self._area_result_key)
         self._area_result_card.layout().addWidget(self._area_result_val)
 
-        self._weight_result_card = _result_tile()
+        self._weight_result_card = _ResultTile(self)
         self._weight_result_key = _result_key_label("")
         self._weight_result_val = _result_val_label("—")
         self._weight_result_card.layout().addWidget(self._weight_result_key)
         self._weight_result_card.layout().addWidget(self._weight_result_val)
 
-        self._density_area_result_card = _result_tile()
+        self._density_area_result_card = _ResultTile(self)
         self._density_area_result_key = _result_key_label("")
         self._density_area_result_val = _result_val_label("—")
         self._density_area_result_card.layout().addWidget(self._density_area_result_key)
@@ -291,6 +305,7 @@ class SheetMetalWeightPanel(QFrame):
         self._area_lbl.setText(self.tr("Area"))
         self.radio_manual.setText(self.tr("Manual (Width × Height)"))
         self.radio_dxf.setText(self.tr("DXF File"))
+        self._dxf_coming_soon_lbl.setText(self.tr("Coming soon…"))
         self._width_lbl.setText(self.tr("Width"))
         self._height_lbl.setText(self.tr("Height"))
         self.dxf_browse_btn.setText(self.tr("Browse…"))
@@ -396,9 +411,13 @@ class SheetMetalWeightPanel(QFrame):
         weight_kg = volume_m3 * density
         kg_per_m2 = thickness_m * density  # kg/m² for this thickness
 
-        self._area_result_val.setText(f"{area_m2:.4f} m²")
-        self._weight_result_val.setText(f"{weight_kg:.3f} kg")
-        self._density_area_result_val.setText(f"{kg_per_m2:.4f} kg/m²")
+        self._area_result_val.setText(f"{area_m2:.2f} m²")
+        self._weight_result_val.setText(f"{weight_kg:.2f} kg")
+        self._density_area_result_val.setText(f"{kg_per_m2:.2f} kg/m²")
+
+        self._area_result_card.set_value(area_m2)
+        self._weight_result_card.set_value(weight_kg)
+        self._density_area_result_card.set_value(kg_per_m2)
 
         self.result_card.setVisible(True)
 
@@ -424,14 +443,45 @@ def _field_label(text: str) -> QLabel:
     return lbl
 
 
-def _result_tile() -> QFrame:
-    tile = QFrame()
-    tile.setObjectName("smwResultTile")
-    lay = QVBoxLayout(tile)
-    lay.setContentsMargins(14, 12, 14, 12)
-    lay.setSpacing(4)
-    lay.setAlignment(Qt.AlignCenter)
-    return tile
+class _ResultTile(QFrame):
+    """Clickable result tile — copies numeric value to clipboard on click."""
+
+    def __init__(self, panel: "SheetMetalWeightPanel"):
+        super().__init__(panel)
+        self._panel = panel
+        self._value: Optional[float] = None
+        self.setObjectName("smwResultTile")
+        self.setCursor(Qt.PointingHandCursor)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(14, 12, 14, 12)
+        lay.setSpacing(4)
+        lay.setAlignment(Qt.AlignCenter)
+
+    def set_value(self, value: float) -> None:
+        self._value = value
+
+    def _show_tooltip(self) -> None:
+        if self._value is None:
+            return
+        tooltip_text = self._panel.tr("Value copied to clipboard")
+        pos = self.mapToGlobal(QPoint(self.width() // 2, -8))
+        QToolTip.showText(pos, tooltip_text, self, self.rect(), 2000)
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.LeftButton and self._value is not None:
+            # Format with system decimal separator
+            dec_sep = locale.localeconv().get("decimal_point", ".")
+            text = f"{self._value:.2f}".replace(".", dec_sep)
+            QApplication.clipboard().setText(text)
+            self._pending_tooltip = True
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:
+        super().mouseReleaseEvent(event)
+        if event.button() == Qt.LeftButton and getattr(self, "_pending_tooltip", False):
+            self._pending_tooltip = False
+            # Defer past the release so Qt doesn't kill the tooltip immediately
+            QTimer.singleShot(0, self._show_tooltip)
 
 
 def _result_key_label(text: str) -> QLabel:

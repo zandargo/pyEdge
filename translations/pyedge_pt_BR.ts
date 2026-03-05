@@ -655,6 +655,14 @@
         <source>Other</source>
         <translation>Outro</translation>
     </message>
+    <message>
+        <source>Value copied to clipboard</source>
+        <translation>Valor copiado para a área de transferência</translation>
+    </message>
+    <message>
+        <source>Coming soon…</source>
+        <translation>Em breve…</translation>
+    </message>
 </context>
 
 <context>
