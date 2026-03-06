@@ -7,6 +7,8 @@ import locale
 from pathlib import Path
 from typing import Optional, Type
 
+from services.dxf_area import compute_dxf_net_area
+
 from PyQt5.QtCore import QEvent, QPoint, Qt, QTimer
 from PyQt5.QtWidgets import (
     QAbstractItemView,
@@ -204,9 +206,11 @@ class SheetMetalWeightPanel(QFrame):
         dxf_layout.setContentsMargins(0, 0, 0, 0)
         dxf_layout.setSpacing(6)
 
-        self._dxf_coming_soon_lbl = QLabel()
-        self._dxf_coming_soon_lbl.setObjectName("smwComingSoon")
-        dxf_layout.addWidget(self._dxf_coming_soon_lbl)
+        self._dxf_status_lbl = QLabel()
+        self._dxf_status_lbl.setObjectName("smwComingSoon")
+        self._dxf_status_lbl.setWordWrap(True)
+        self._dxf_status_lbl.setVisible(False)
+        dxf_layout.addWidget(self._dxf_status_lbl)
 
         dxf_row = QWidget()
         dxf_row.setStyleSheet("background: transparent;")
@@ -305,7 +309,6 @@ class SheetMetalWeightPanel(QFrame):
         self._area_lbl.setText(self.tr("Area"))
         self.radio_manual.setText(self.tr("Manual (Width × Height)"))
         self.radio_dxf.setText(self.tr("DXF File"))
-        self._dxf_coming_soon_lbl.setText(self.tr("Coming soon…"))
         self._width_lbl.setText(self.tr("Width"))
         self._height_lbl.setText(self.tr("Height"))
         self.dxf_browse_btn.setText(self.tr("Browse…"))
@@ -380,8 +383,8 @@ class SheetMetalWeightPanel(QFrame):
         if path:
             self._dxf_path = path
             self.dxf_path_edit.setText(path)
-            # DXF area calculation will be implemented later
-            self.result_card.setVisible(False)
+            self._dxf_status_lbl.setVisible(False)
+            self._calculate()
 
     # ── Calculation ───────────────────────────────────────────────────────────
 
@@ -395,20 +398,31 @@ class SheetMetalWeightPanel(QFrame):
 
         density = self.density_spin.value()  # kg/m³
 
-        # Area (only manual supported now)
+        # Area source
         mode = self._area_btn_group.checkedId()
         if mode == 1:
-            # DXF – not yet implemented
-            self.result_card.setVisible(False)
-            return
-
-        width_m = self.width_spin.value() / 1000.0
-        height_m = self.height_spin.value() / 1000.0
-        area_m2 = width_m * height_m
+            # DXF area calculation
+            if not self._dxf_path:
+                self.result_card.setVisible(False)
+                return
+            try:
+                net_area_mm2, _outer, _holes = compute_dxf_net_area(self._dxf_path)
+            except Exception as exc:
+                self._dxf_status_lbl.setText(self.tr("Error reading DXF: ") + str(exc))
+                self._dxf_status_lbl.setVisible(True)
+                self.result_card.setVisible(False)
+                return
+            self._dxf_status_lbl.setVisible(False)
+            area_m2 = net_area_mm2 / 1_000_000.0   # mm² → m²
+        else:
+            width_m = self.width_spin.value() / 1000.0
+            height_m = self.height_spin.value() / 1000.0
+            area_m2 = width_m * height_m
 
         thickness_m = thickness_mm / 1000.0
         volume_m3 = area_m2 * thickness_m
         weight_kg = volume_m3 * density
+
         kg_per_m2 = thickness_m * density  # kg/m² for this thickness
 
         self._area_result_val.setText(f"{area_m2:.2f} m²")
