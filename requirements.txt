@@ -6,3 +6,5 @@ pywin32
 # Build / packaging
 pyinstaller
 pillow          # required to convert PNG → ICO for the Windows executable icon
+nuitka          # recommended build for fastest startup (compiles Python → native C)
+                # also requires MSVC (Visual Studio Build Tools) or MinGW-w64

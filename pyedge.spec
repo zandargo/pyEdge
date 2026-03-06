@@ -1,6 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec file for pyEdge
 # Build with:  pyinstaller pyedge.spec
+#
+# Network-drive deployment notes:
+#   - UPX is intentionally disabled: on a LAN the decompression CPU overhead
+#     exceeds the transfer savings, slowing every DLL load.
+#   - Use launch_local.bat on the share so end-users run from %LOCALAPPDATA%.
+#   - For best startup performance consider the Nuitka build (build_nuitka.bat).
 
 a = Analysis(
     ['main.py'],
@@ -27,12 +33,39 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
+        # GUI alternatives
         'PySide6',
         'tkinter',
+        # Scientific / image libs not used at runtime
         'matplotlib',
         'numpy',
         'scipy',
         'PIL',
+        # Standard-library extras that pull in large dependency trees
+        'email',
+        'html',
+        'http',
+        'unittest',
+        'xmlrpc',
+        'pydoc',
+        'doctest',
+        'ftplib',
+        'smtplib',
+        'telnetlib',
+        'imaplib',
+        'poplib',
+        'nntplib',
+        'mailbox',
+        'msilib',
+        'cgi',
+        'cgitb',
+        'turtle',
+        'turtledemo',
+        'py_compile',
+        'compileall',
+        'multiprocessing',
+        'concurrent',
+        'asyncio',
     ],
     noarchive=False,
 )
@@ -48,8 +81,8 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    console=False,               # no console window (windowed app)
+    upx=False,            # disabled — decompression overhead hurts network-share startup
+    console=False,        # no console window (windowed app)
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
@@ -63,7 +96,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,            # disabled — decompression overhead hurts network-share startup
     upx_exclude=[],
     name='pyEdge',
 )
