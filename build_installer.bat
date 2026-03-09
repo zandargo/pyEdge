@@ -21,13 +21,40 @@ if exist "venv\Scripts\activate.bat" (
 )
 
 :: ---------------------------------------------------------------------------
-:: Step 2 — Verify PyInstaller
+:: Step 2 — Verify required Python packages
 :: ---------------------------------------------------------------------------
-python -m PyInstaller --version >nul 2>&1
+python -m pip show pyinstaller >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] PyInstaller not found. Install it with:
     echo         pip install pyinstaller
+    pause
+    exit /b 1
+)
+
+python -m pip show ezdxf >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] ezdxf not found. Install it with:
+    echo         pip install ezdxf
+    pause
+    exit /b 1
+)
+
+python -m pip show shapely >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] shapely not found. Install it with:
+    echo         pip install shapely
+    pause
+    exit /b 1
+)
+
+python -m pip show numpy >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] numpy not found. Install it with:
+    echo         pip install numpy
     pause
     exit /b 1
 )

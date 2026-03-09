@@ -42,6 +42,8 @@ python -m nuitka ^
     --include-module=win32con ^
     --include-module=pywintypes ^
     --include-module=pythoncom ^
+    --include-package=ezdxf ^
+    --include-package=shapely ^
     --nofollow-import-to=tkinter ^
     --nofollow-import-to=matplotlib ^
     --nofollow-import-to=numpy ^

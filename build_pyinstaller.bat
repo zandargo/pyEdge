@@ -22,9 +22,10 @@ if exist "venv\Scripts\activate.bat" (
 )
 
 :: ---------------------------------------------------------------------------
-:: Verify PyInstaller is available before continuing.
+:: Verify required packages are installed before continuing.
 :: ---------------------------------------------------------------------------
-python -m PyInstaller --version >nul 2>&1
+echo [1.5/4] Checking required packages...
+python -m pip show pyinstaller >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] PyInstaller not found. Install it with:
@@ -33,12 +34,39 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
+python -m pip show ezdxf >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] ezdxf not found. Install it with:
+    echo         pip install ezdxf
+    pause
+    exit /b 1
+)
+
+python -m pip show shapely >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] shapely not found. Install it with:
+    echo         pip install shapely
+    pause
+    exit /b 1
+)
+
+python -m pip show numpy >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] numpy not found. Install it with:
+    echo         pip install numpy
+    pause
+    exit /b 1
+)
+
 :: ---------------------------------------------------------------------------
 :: Clean previous build artifacts so the dist folder only contains files
 :: that actually belong to this build (avoids shipping orphaned DLLs).
 :: ---------------------------------------------------------------------------
-echo [2/4] Cleaning previous build...
-if exist build  Remove-Item -Recurse -Force build  2>nul
+echo [2/5] Cleaning previous build...
+if exist build  rmdir /s /q build 2>nul
 if exist "dist\pyEdge" (
     rmdir /s /q "dist\pyEdge" 2>nul
 )
@@ -57,7 +85,7 @@ if exist "dist\pyEdge" (
 :: --clean      — purge PyInstaller's own build cache (Analysis, toc files)
 ::              to avoid stale module lists leaking between builds.
 :: ---------------------------------------------------------------------------
-echo [3/4] Running PyInstaller...
+echo [3/5] Running PyInstaller...
 echo.
 python -m PyInstaller pyedge.spec --clean
 
@@ -69,7 +97,16 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [4/4] Build complete!
+echo [4/5] Verifying build output...
+if not exist "dist\pyEdge\pyEdge.exe" (
+    echo.
+    echo [ERROR] dist\pyEdge\pyEdge.exe not found after build.
+    pause
+    exit /b 1
+)
+
+echo.
+echo [5/5] Build complete!
 echo.
 echo ============================================================
 echo   Output folder: dist\pyEdge\

@@ -4,6 +4,7 @@ PyQt-Fluent-Widgets
 pywin32
 ezdxf        # DXF file reading (sheet metal DXF area calculation)
 shapely      # polygon containment-tree for hole detection
+numpy        # required by ezdxf runtime modules in packaged app
 
 # Build / packaging
 pyinstaller

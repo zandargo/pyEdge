@@ -30,13 +30,20 @@ from typing import List, Optional, Tuple
 try:
     import ezdxf  # type: ignore
 except ImportError as exc:  # pragma: no cover
-    raise ImportError("ezdxf is required: pip install ezdxf") from exc
+    ezdxf = None  # type: ignore[assignment]
+    _EZDXF_IMPORT_ERROR = exc
+else:
+    _EZDXF_IMPORT_ERROR = None
 
 try:
     from shapely.geometry import Polygon  # type: ignore
     from shapely.validation import make_valid  # type: ignore
 except ImportError as exc:  # pragma: no cover
-    raise ImportError("shapely is required: pip install shapely") from exc
+    Polygon = None  # type: ignore[assignment]
+    make_valid = None  # type: ignore[assignment]
+    _SHAPELY_IMPORT_ERROR = exc
+else:
+    _SHAPELY_IMPORT_ERROR = None
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +75,19 @@ _INSUNITS_TO_MM: dict[int, float] = {
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 
+def _ensure_runtime_dependencies() -> None:
+    """Fail with actionable details only when DXF functionality is used."""
+    if _EZDXF_IMPORT_ERROR is not None:
+        raise RuntimeError(
+            "DXF feature unavailable: failed to import ezdxf "
+            f"({_EZDXF_IMPORT_ERROR})."
+        ) from _EZDXF_IMPORT_ERROR
+    if _SHAPELY_IMPORT_ERROR is not None:
+        raise RuntimeError(
+            "DXF feature unavailable: failed to import shapely "
+            f"({_SHAPELY_IMPORT_ERROR})."
+        ) from _SHAPELY_IMPORT_ERROR
+
 def compute_dxf_net_area(path: "str | Path") -> Tuple[float, int, int]:
     """Return ``(net_area_mm2, outer_count, hole_count)``.
 
@@ -91,11 +111,15 @@ def compute_dxf_net_area(path: "str | Path") -> Tuple[float, int, int]:
 
     Raises
     ------
+    RuntimeError:
+        If DXF runtime dependencies are unavailable in this environment.
     ezdxf.DXFStructureError, ezdxf.DXFError:
         If the file cannot be read as a valid DXF.
     ValueError:
         If no closed contours are found in the file.
     """
+    _ensure_runtime_dependencies()
+
     doc = ezdxf.readfile(str(path))
     msp = doc.modelspace()
 
@@ -103,7 +127,7 @@ def compute_dxf_net_area(path: "str | Path") -> Tuple[float, int, int]:
     insunits: int = int(doc.header.get("$INSUNITS", 0))
     scale: float = _INSUNITS_TO_MM.get(insunits, 1.0)
 
-    polygons: List[Polygon] = []
+    polygons: List[object] = []
     _collect_polygons(list(msp), scale, polygons)
 
     # Also stitch individual open entities (LINE, ARC, open polylines …)
@@ -176,7 +200,7 @@ def _layer_is_ignored(entity) -> bool:
 
 # ── Entity collection ──────────────────────────────────────────────────────────
 
-def _collect_polygons(entities: list, scale: float, out: List[Polygon]) -> None:
+def _collect_polygons(entities: list, scale: float, out: List[object]) -> None:
     """Recursively convert DXF entities to Shapely Polygons and append to *out*."""
     for entity in entities:
         dxftype = entity.dxftype()

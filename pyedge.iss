@@ -15,7 +15,7 @@
 
 #define AppName      "pyEdge"
 #define AppVersion   "1.0"
-#define AppPublisher "zandargo"
+#define AppPublisher "Madson Germano"
 #define AppURL       "https://github.com/zandargo/pyEdge"
 #define AppExeName   "pyEdge.exe"
 ; Path to the PyInstaller onedir output folder
