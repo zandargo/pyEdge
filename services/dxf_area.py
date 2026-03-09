@@ -6,6 +6,11 @@ containment-tree approach that mirrors the BricsCAD VBA
 
 - Every closed boundary (LWPOLYLINE, POLYLINE, CIRCLE, ELLIPSE, SPLINE,
   or entities inside INSERT blocks) is converted to a Shapely polygon.
+- Individual open entities (LINE, ARC, open LWPOLYLINE / POLYLINE / SPLINE)
+  are collected as segments and stitched into closed loops by matching
+  endpoints within a configurable tolerance (_STITCH_TOL_MM).  This handles
+  common DXF shapes built from separate LINE entities (e.g. a square drawn
+  with four individual lines).
 - Polygons are sorted by area descending (largest first).
 - For each polygon the *direct parent* — the smallest enclosing polygon — is
   found, giving its nesting depth.
@@ -17,6 +22,7 @@ containment-tree approach that mirrors the BricsCAD VBA
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -36,6 +42,11 @@ except ImportError as exc:  # pragma: no cover
 
 _ARC_SEGMENTS: int = 64        # interpolation segments per full circle
 _MIN_AREA_MM2: float = 1.0     # polygons smaller than this are ignored
+_STITCH_TOL_MM: float = 0.01   # endpoint-matching tolerance for open-segment stitching (mm)
+
+# Layer names that contain any of these substrings (case-insensitive) are
+# excluded from area analysis (engraving marks, text, bend lines, etc.).
+_IGNORED_LAYER_KEYWORDS: tuple[str, ...] = ("gravação", "texto", "dobra")
 
 # DXF $INSUNITS code → scale factor to millimetres
 _INSUNITS_TO_MM: dict[int, float] = {
@@ -95,6 +106,23 @@ def compute_dxf_net_area(path: "str | Path") -> Tuple[float, int, int]:
     polygons: List[Polygon] = []
     _collect_polygons(list(msp), scale, polygons)
 
+    # Also stitch individual open entities (LINE, ARC, open polylines …)
+    # into closed loops and add any resulting polygons.
+    open_segs = _collect_open_segments(list(msp), scale)
+    for loop_pts in _stitch_segs_to_loops(open_segs, tol=_STITCH_TOL_MM):
+        try:
+            poly = Polygon(loop_pts)
+            if not poly.is_valid:
+                poly = make_valid(poly)
+            if poly.geom_type == "Polygon" and poly.area > _MIN_AREA_MM2:
+                polygons.append(poly)
+            elif poly.geom_type in ("MultiPolygon", "GeometryCollection"):
+                for geom in poly.geoms:
+                    if geom.geom_type == "Polygon" and geom.area > _MIN_AREA_MM2:
+                        polygons.append(geom)
+        except Exception:
+            pass
+
     if not polygons:
         raise ValueError("No closed contours found in the DXF file.")
 
@@ -135,6 +163,17 @@ def compute_dxf_net_area(path: "str | Path") -> Tuple[float, int, int]:
     return net_area, outer_count, hole_count
 
 
+# ── Layer filtering ───────────────────────────────────────────────────────────
+
+def _layer_is_ignored(entity) -> bool:
+    """Return True if the entity's layer name contains any ignored keyword."""
+    try:
+        layer = entity.dxf.layer.lower()
+    except Exception:
+        return False
+    return any(kw in layer for kw in _IGNORED_LAYER_KEYWORDS)
+
+
 # ── Entity collection ──────────────────────────────────────────────────────────
 
 def _collect_polygons(entities: list, scale: float, out: List[Polygon]) -> None:
@@ -148,6 +187,9 @@ def _collect_polygons(entities: list, scale: float, out: List[Polygon]) -> None:
                 _collect_polygons(list(entity.virtual_entities()), scale, out)
             except Exception:
                 pass
+            continue
+
+        if _layer_is_ignored(entity):
             continue
 
         pts = _entity_to_points(entity, scale)
@@ -174,8 +216,9 @@ def _collect_polygons(entities: list, scale: float, out: List[Polygon]) -> None:
 # ── Entity → 2-D point list ───────────────────────────────────────────────────
 
 def _entity_to_points(entity, scale: float) -> List[Tuple[float, float]]:
-    """Return a list of (x, y) mm points for a single DXF entity, or [] if
-    the entity is open / unsupported."""
+    """Return a list of (x, y) mm points for a *closed* DXF entity, or [] if
+    the entity is open / unsupported.  Open entities (LINE, ARC, …) are
+    handled separately via _collect_open_segments / _stitch_segs_to_loops."""
     t = entity.dxftype()
     if t == "LWPOLYLINE":
         return _lwpolyline_points(entity, scale) if entity.is_closed else []
@@ -334,3 +377,194 @@ def _spline_points(entity, scale: float) -> List[Tuple[float, float]]:
         return raw if len(raw) >= 3 else []
     except Exception:
         return []
+
+
+# ── Open-segment collection ────────────────────────────────────────────────────
+
+def _arc_points(entity, scale: float) -> List[Tuple[float, float]]:
+    """Approximate a DXF ARC entity as an ordered point sequence (CCW)."""
+    try:
+        cx = entity.dxf.center.x * scale
+        cy = entity.dxf.center.y * scale
+        r = entity.dxf.radius * scale
+        start_angle = math.radians(entity.dxf.start_angle)
+        end_angle = math.radians(entity.dxf.end_angle)
+    except Exception:
+        return []
+
+    # DXF arcs are always CCW; wrap end_angle so it is > start_angle
+    if end_angle <= start_angle:
+        end_angle += 2.0 * math.pi
+
+    span = end_angle - start_angle
+    num_pts = max(3, round(span / (2.0 * math.pi) * _ARC_SEGMENTS))
+    return [
+        (cx + r * math.cos(start_angle + k / num_pts * span),
+         cy + r * math.sin(start_angle + k / num_pts * span))
+        for k in range(num_pts + 1)
+    ]
+
+
+def _lwpolyline_open_points(entity, scale: float) -> List[Tuple[float, float]]:
+    """Convert an open LWPOLYLINE (with optional bulge arcs) to 2-D points."""
+    pts_bulge = list(entity.get_points(format="xyb"))
+    n = len(pts_bulge)
+    if n < 2:
+        return []
+
+    result: List[Tuple[float, float]] = []
+    for i in range(n - 1):
+        x0, y0, bulge = pts_bulge[i]
+        x1, y1, _ = pts_bulge[i + 1]
+        result.append((x0 * scale, y0 * scale))
+        if abs(bulge) > 1e-9:
+            result.extend(_bulge_to_arc_points(x0, y0, x1, y1, bulge, scale))
+
+    xn, yn, _ = pts_bulge[-1]
+    result.append((xn * scale, yn * scale))
+    return result
+
+
+def _polyline_open_points(entity, scale: float) -> List[Tuple[float, float]]:
+    """Convert an open 2-D POLYLINE to a list of points."""
+    try:
+        return [
+            (v.dxf.location.x * scale, v.dxf.location.y * scale)
+            for v in entity.vertices
+        ]
+    except Exception:
+        return []
+
+
+def _open_entity_to_points(entity, scale: float) -> List[Tuple[float, float]]:
+    """Return an ordered (start → end) point list for LINE, ARC, and open
+    polyline / spline entities.  Returns [] for unsupported or closed entities.
+    """
+    t = entity.dxftype()
+    if t == "LINE":
+        try:
+            s = entity.dxf.start
+            e = entity.dxf.end
+            return [(s.x * scale, s.y * scale), (e.x * scale, e.y * scale)]
+        except Exception:
+            return []
+    if t == "ARC":
+        return _arc_points(entity, scale)
+    if t == "LWPOLYLINE" and not entity.is_closed:
+        return _lwpolyline_open_points(entity, scale)
+    if t == "POLYLINE" and not entity.is_closed:
+        return _polyline_open_points(entity, scale)
+    if t == "SPLINE":
+        try:
+            if not entity.closed:
+                raw = [(p.x * scale, p.y * scale)
+                       for p in entity.flattening(0.1 / max(scale, 1e-9))]
+                return raw if len(raw) >= 2 else []
+        except Exception:
+            pass
+    return []
+
+
+def _collect_open_segments(entities: list, scale: float) -> List[List[Tuple[float, float]]]:
+    """Recursively collect LINE / ARC / open-polyline entities as point sequences."""
+    result: List[List[Tuple[float, float]]] = []
+    for entity in entities:
+        dxftype = entity.dxftype()
+        if dxftype == "INSERT":
+            try:
+                result.extend(_collect_open_segments(list(entity.virtual_entities()), scale))
+            except Exception:
+                pass
+            continue
+        if _layer_is_ignored(entity):
+            continue
+        pts = _open_entity_to_points(entity, scale)
+        if len(pts) >= 2:
+            result.append(pts)
+    return result
+
+
+# ── Segment stitching ──────────────────────────────────────────────────────────
+
+def _stitch_segs_to_loops(
+    segments: List[List[Tuple[float, float]]],
+    tol: float,
+) -> List[List[Tuple[float, float]]]:
+    """Greedily stitch open segments into closed loops by matching endpoints.
+
+    Parameters
+    ----------
+    segments:
+        Each element is an ordered list of (x, y) mm points for one open
+        entity (LINE, ARC, open polyline …).  ``seg[0]`` is the start and
+        ``seg[-1]`` is the end.
+    tol:
+        Endpoint-matching tolerance in mm (same unit as the coordinates).
+
+    Returns
+    -------
+    List of closed point sequences (the closing point is *not* repeated).
+    """
+    if not segments:
+        return []
+
+    def snap(pt: Tuple[float, float]) -> Tuple[float, float]:
+        return (round(pt[0] / tol) * tol, round(pt[1] / tol) * tol)
+
+    n = len(segments)
+    seg_start = [snap(seg[0]) for seg in segments]
+    seg_end = [snap(seg[-1]) for seg in segments]
+
+    # Build adjacency: snapped endpoint → [(seg_idx, reversed)]
+    #   (i, False) - enter at seg[0], exit at seg[-1]  (forward traversal)
+    #   (i, True)  - enter at seg[-1], exit at seg[0]  (reverse traversal)
+    adj: dict = defaultdict(list)
+    for i in range(n):
+        adj[seg_start[i]].append((i, False))
+        adj[seg_end[i]].append((i, True))
+
+    used = [False] * n
+    loops: List[List[Tuple[float, float]]] = []
+
+    for start_idx in range(n):
+        if used[start_idx]:
+            continue
+
+        # Start a chain with this segment traversed forward
+        chain: List[Tuple[int, bool]] = [(start_idx, False)]
+        chain_set = {start_idx}
+        loop_origin = seg_start[start_idx]
+        current_node = seg_end[start_idx]
+        closed = (current_node == loop_origin)
+
+        for _ in range(n):
+            if closed:
+                break
+            found = False
+            for nbr_idx, nbr_rev in adj[current_node]:
+                if nbr_idx in chain_set:
+                    continue
+                chain.append((nbr_idx, nbr_rev))
+                chain_set.add(nbr_idx)
+                current_node = seg_start[nbr_idx] if nbr_rev else seg_end[nbr_idx]
+                found = True
+                closed = (current_node == loop_origin)
+                break
+            if not found:
+                break
+
+        if not closed:
+            continue  # open chain — skip, don't mark as used
+
+        # Assemble the closed point list (exclude the shared closing point)
+        loop_pts: List[Tuple[float, float]] = []
+        for seg_idx, rev in chain:
+            used[seg_idx] = True
+            seg = segments[seg_idx]
+            pts = list(reversed(seg)) if rev else seg
+            loop_pts.extend(pts[:-1])
+
+        if len(loop_pts) >= 3:
+            loops.append(loop_pts)
+
+    return loops
