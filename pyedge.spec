@@ -8,6 +8,8 @@
 #   - Use launch_local.bat on the share so end-users run from %LOCALAPPDATA%.
 #   - For best startup performance consider the Nuitka build (build_nuitka.bat).
 
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+
 a = Analysis(
     ['main.py'],
     pathex=[],
@@ -16,6 +18,8 @@ a = Analysis(
         ('ref',           'ref'),
         ('assets',        'assets'),
         ('translations',  'translations'),
+        *collect_data_files('ezdxf'),
+        *collect_data_files('shapely'),
     ],
     hiddenimports=[
         'win32com',
@@ -28,6 +32,8 @@ a = Analysis(
         'qfluentwidgets',
         'qfluentwidgets.common',
         'qfluentwidgets.components',
+        *collect_submodules('ezdxf'),
+        *collect_submodules('shapely'),
     ],
     hookspath=[],
     hooksconfig={},
