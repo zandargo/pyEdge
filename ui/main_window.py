@@ -281,6 +281,7 @@ class ModernCADApp(QWidget):
                 {"files": files, "printer": printer, "copies": copies, "property": prop, "property_value": prop_val},
             )
         )
+        self.printing_panel.stop_search_requested.connect(self._on_stop_printing_search)
 
     def _load_printing_setup(self) -> None:
         self._start_printing_worker("list_setup")
@@ -292,6 +293,8 @@ class ModernCADApp(QWidget):
             self.printing_worker.wait(2000)
         self.printing_worker = PrintingWorker(action, payload)
         self.printing_worker.finished.connect(self._on_printing_worker_finished)
+        if action == "deep_search":
+            self.printing_worker.progress.connect(self.printing_panel.update_search_progress)
         self.printing_worker.start()
 
     def _on_printing_worker_finished(self, action: str, payload: Dict[str, Any]) -> None:
@@ -308,6 +311,7 @@ class ModernCADApp(QWidget):
                 payload.get("files", []),
                 deep_available=False,
                 is_deep_search=True,
+                is_stopped=payload.get("stopped", False),
             )
         elif action == "print_files":
             ok = bool(payload.get("ok", False))
@@ -316,6 +320,10 @@ class ModernCADApp(QWidget):
                 payload.get("message", ""),
             )
             self.printing_panel.set_busy(False)
+
+    def _on_stop_printing_search(self) -> None:
+        if self.printing_worker and self.printing_worker.isRunning():
+            self.printing_worker.stop()
 
     def _build_printing_placeholder(self, BodyLabel: Any, SubtitleLabel: Any) -> Any:
         # kept for reference, replaced by PrintingPanel

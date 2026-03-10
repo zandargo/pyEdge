@@ -28,6 +28,7 @@ class PrintingPanel(QFrame):
 
     search_requested = pyqtSignal(str, str)          # code, drive
     deep_search_requested = pyqtSignal(str, str)     # code, drive
+    stop_search_requested = pyqtSignal()             # stop deep search
     print_requested = pyqtSignal(list, str, int, str, str) # files, printer, copies, property_name, property_value
 
     def __init__(self, SubtitleLabel: Type, BodyLabel: Type, parent=None):
@@ -36,6 +37,7 @@ class PrintingPanel(QFrame):
 
         self._last_code: str = ""
         self._last_drive: str = ""
+        self._deep_search_running: bool = False
 
         root = QVBoxLayout(self)
         root.setContentsMargins(28, 24, 28, 24)
@@ -269,7 +271,8 @@ class PrintingPanel(QFrame):
         self._code_lbl.setText(self.tr("File Code"))
         self._prop_lbl.setText(self.tr("SE Property"))
         self._prop_val_lbl.setText(self.tr("Property Value"))
-        self.search_btn.setText(self.tr("Search files"))
+        if not self._deep_search_running:
+            self.search_btn.setText(self.tr("Search files"))
         self.results_label.setText(self.tr("Found files"))
         self._copies_lbl.setText(self.tr("Copies"))
         self._deep_msg.setText(self.tr("No files found in the preferred location."))
@@ -322,8 +325,39 @@ class PrintingPanel(QFrame):
     def _on_deep_search(self) -> None:
         self.deep_bar.setVisible(False)
         self.results_label.setText(self.tr("Searching entire drive…"))
-        self.search_btn.setEnabled(False)
+        self._set_search_btn_stop_mode(True)
         self.deep_search_requested.emit(self._last_code, self._last_drive)
+
+    def _on_stop_search(self) -> None:
+        self.stop_search_requested.emit()
+
+    def _set_search_btn_stop_mode(self, stop_mode: bool) -> None:
+        if stop_mode and not self._deep_search_running:
+            self._deep_search_running = True
+            self.search_btn.setText(self.tr("Stop"))
+            self.search_btn.setStyleSheet(
+                "QPushButton#printSearchBtn {"
+                "  background-color: rgba(220, 38, 38, 200);"
+                "  border-color: rgba(220, 38, 38, 220);"
+                "}"
+                "QPushButton#printSearchBtn:hover {"
+                "  background-color: rgba(220, 38, 38, 240);"
+                "}"
+            )
+            self.search_btn.clicked.disconnect(self._on_search)
+            self.search_btn.clicked.connect(self._on_stop_search)
+        elif not stop_mode and self._deep_search_running:
+            self._deep_search_running = False
+            self.search_btn.setText(self.tr("Search files"))
+            self.search_btn.setStyleSheet("")
+            self.search_btn.clicked.disconnect(self._on_stop_search)
+            self.search_btn.clicked.connect(self._on_search)
+            self.search_btn.setEnabled(True)
+
+    def update_search_progress(self, dirpath: str) -> None:
+        max_len = 60
+        display = dirpath if len(dirpath) <= max_len else "\u2026" + dirpath[-(max_len - 1):]
+        self.results_label.setText(self.tr("Searching: {0}").format(display))
 
 
     def _on_print(self) -> None:
@@ -358,12 +392,16 @@ class PrintingPanel(QFrame):
         files: List[str],
         deep_available: bool = False,
         is_deep_search: bool = False,
+        is_stopped: bool = False,
     ) -> None:
+        self._set_search_btn_stop_mode(False)
         self.search_btn.setEnabled(True)
         self.results_list.clear()
 
         if not files:
-            if is_deep_search:
+            if is_stopped:
+                self.results_label.setText(self.tr("Search stopped. No files found."))
+            elif is_deep_search:
                 self.results_label.setText(self.tr("No files found across the entire drive."))
             else:
                 self.results_label.setText(self.tr("No files found."))
@@ -371,7 +409,10 @@ class PrintingPanel(QFrame):
             self.print_btn.setEnabled(False)
             return
 
-        self.results_label.setText(self.tr("Found files ({0})").format(len(files)))
+        if is_stopped:
+            self.results_label.setText(self.tr("Found files ({0}) \u2014 search stopped").format(len(files)))
+        else:
+            self.results_label.setText(self.tr("Found files ({0})").format(len(files)))
         self.deep_bar.setVisible(False)
         for path in files:
             item = QListWidgetItem(os.path.basename(path))

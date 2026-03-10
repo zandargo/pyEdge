@@ -94,11 +94,16 @@ class PrintingWorker(QThread):
     """Background worker for printer enumeration, file search, and printing."""
 
     finished = pyqtSignal(str, dict)
+    progress = pyqtSignal(str)  # emits current directory during deep search
 
     def __init__(self, action: str, payload: Optional[Dict[str, Any]] = None):
         super().__init__()
         self.action = action
         self.payload = payload or {}
+        self._stop_requested = False
+
+    def stop(self) -> None:
+        self._stop_requested = True
 
     def run(self) -> None:
         if self.action == "list_setup":
@@ -120,10 +125,34 @@ class PrintingWorker(QThread):
         elif self.action == "deep_search":
             code = self.payload.get("code", "").strip().upper()
             drive = self.payload.get("drive", "P:")
-            files = _search_deep(code, drive)
+            m_full = PATTERN_FULL.match(code)
+            m_partial = PATTERN_PARTIAL.match(code)
+            if m_full:
+                client, part, rev = m_full.group(1), m_full.group(2), m_full.group(3).upper()
+                name_pat = re.compile(
+                    rf"^{re.escape(client)}-{re.escape(part)}-{re.escape(rev)}.*\.dft$",
+                    re.IGNORECASE,
+                )
+            elif m_partial:
+                client, part = m_partial.group(1), m_partial.group(2)
+                name_pat = re.compile(
+                    rf"^{re.escape(client)}-{re.escape(part)}-.*\.dft$", re.IGNORECASE
+                )
+            else:
+                name_pat = re.compile(rf".*{re.escape(code)}.*\.dft$", re.IGNORECASE)
+            results: List[str] = []
+            root = drive + "\\"
+            for dirpath, _dirs, filenames in os.walk(root):
+                if self._stop_requested:
+                    break
+                self.progress.emit(dirpath)
+                for fn in filenames:
+                    if name_pat.match(fn):
+                        results.append(os.path.join(dirpath, fn))
             self.finished.emit("deep_search", {
                 "ok": True,
-                "files": files,
+                "files": sorted(results),
+                "stopped": self._stop_requested,
             })
 
         elif self.action == "print_files":
