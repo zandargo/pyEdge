@@ -41,18 +41,26 @@ def _search_preferred(code: str, drive: str) -> List[str]:
 
     if m_full:
         client, part, rev = m_full.group(1), m_full.group(2), m_full.group(3).upper()
-        pattern = os.path.join(
-            base, f"{client}-*", f"{client}-{part}*", f"Rev-{rev}", f"{client}-{part}-{rev}*.dft"
-        )
+        folder_pattern = os.path.join(base, f"{client}-*", f"{client}-{part}*", f"Rev-{rev}")
+        results = sorted(glob.glob(os.path.join(folder_pattern, f"{client}-{part}-{rev}*.dft")))
+        if not results:
+            for folder in glob.glob(folder_pattern):
+                results.extend(glob.glob(os.path.join(folder, "*.dft")))
+            results = sorted(results)
+
     elif m_partial:
         client, part = m_partial.group(1), m_partial.group(2)
-        pattern = os.path.join(
-            base, f"{client}-*", f"{client}-{part}*", "Rev-*", f"{client}-{part}-*.dft"
-        )
-    else:
-        pattern = os.path.join(base, "**", f"*{code}*.dft")
+        folder_pattern = os.path.join(base, f"{client}-*", f"{client}-{part}*", "Rev-*")
+        results = sorted(glob.glob(os.path.join(folder_pattern, f"{client}-{part}-*.dft")))
+        if not results:
+            for folder in glob.glob(folder_pattern):
+                results.extend(glob.glob(os.path.join(folder, "*.dft")))
+            results = sorted(results)
 
-    return sorted(glob.glob(pattern, recursive=False))
+    else:
+        results = sorted(glob.glob(os.path.join(base, "**", f"*{code}*.dft"), recursive=False))
+
+    return results
 
 
 def _search_deep(code: str, drive: str) -> List[str]:
