@@ -34,20 +34,20 @@ def _list_drives() -> List[str]:
 
 
 def _search_preferred(code: str, drive: str) -> List[str]:
-    """Search the structured Desenhos folder tree for .dft files matching code."""
-    base = os.path.join(drive + "\\", "Desenhos")
+    """Search the structured folder tree for .dft files matching code."""
+    base = os.path.join(drive + "\\", "")
     m_full = PATTERN_FULL.match(code)
     m_partial = PATTERN_PARTIAL.match(code)
 
     if m_full:
         client, part, rev = m_full.group(1), m_full.group(2), m_full.group(3).upper()
         pattern = os.path.join(
-            base, f"{client}-*", f"{client}-{part}", f"Rev-{rev}", f"{client}-{part}-{rev}*.dft"
+            base, f"{client}-*", f"{client}-{part}*", f"Rev-{rev}", f"{client}-{part}-{rev}*.dft"
         )
     elif m_partial:
         client, part = m_partial.group(1), m_partial.group(2)
         pattern = os.path.join(
-            base, f"{client}-*", f"{client}-{part}", "Rev-*", f"{client}-{part}-*.dft"
+            base, f"{client}-*", f"{client}-{part}*", "Rev-*", f"{client}-{part}-*.dft"
         )
     else:
         pattern = os.path.join(base, "**", f"*{code}*.dft")
@@ -114,7 +114,7 @@ class PrintingWorker(QThread):
 
         elif self.action == "search_files":
             code = self.payload.get("code", "").strip().upper()
-            drive = self.payload.get("drive", "P:")
+            drive = self.payload.get("drive", "")
             files = _search_preferred(code, drive)
             self.finished.emit("search_files", {
                 "ok": True,
@@ -124,7 +124,7 @@ class PrintingWorker(QThread):
 
         elif self.action == "deep_search":
             code = self.payload.get("code", "").strip().upper()
-            drive = self.payload.get("drive", "P:")
+            drive = self.payload.get("drive", "")
             m_full = PATTERN_FULL.match(code)
             m_partial = PATTERN_PARTIAL.match(code)
             if m_full:
