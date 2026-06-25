@@ -38,20 +38,17 @@ _GAS_DISPLAY_ORDER: list[str] = ["compressed_air", "oxygen", "nitrogen"]
 
 def _compute_score_range() -> tuple[float, float]:
     """Pre-compute the theoretical min/max total score any gas can receive."""
-    weights = _SCORING_RULES["weights"]
-    cat_weight = {
-        "material": "material",
-        "thickness": "thickness",
-        "edge_quality": "edge_quality",
-        "post_processing": "post_processing",
-        "cost_priority": "cost_priority",
-    }
-    total_max = total_min = 0.0
-    for cat, wkey in cat_weight.items():
-        all_vals = [s for opt in _SCORING_RULES["rules"][cat].values() for s in opt.values()]
-        total_max += max(all_vals) * weights[wkey]
-        total_min += min(all_vals) * weights[wkey]
-    return total_min, total_max
+    rules = _SCORING_RULES
+    gases = _GAS_ORDER
+    max_score = 0.0
+
+    for gas in gases:
+        max_edge = max(opt[gas] for opt in rules["edge_quality"].values())
+        max_post = max(opt[gas] for opt in rules["post_processing"].values())
+        max_cost = max(opt[gas] for opt in rules["low_cost_priority"].values())
+        max_score = max(max_score, max_edge * max_post * max_cost)
+
+    return 0.0, max_score
 
 
 _SCORE_MIN, _SCORE_MAX = _compute_score_range()
@@ -60,32 +57,25 @@ _SCORE_MIN, _SCORE_MAX = _compute_score_range()
 # ── Scoring algorithm ─────────────────────────────────────────────────────────
 
 def _thickness_range(t: float) -> str:
-    """Pick the matching thickness bucket from the scoring rules."""
-    thickness_rules = _SCORING_RULES["rules"]["thickness"]
+    """Format thickness for display."""
+    return f"{t:.2f} mm"
 
-    def parse_range(key: str) -> tuple[float | None, float | None]:
-        if key.startswith("<="):
-            return None, float(key[2:])
-        if key.startswith(">"):
-            return float(key[1:]), None
-        if "-" in key:
-            low, high = key.split("-", 1)
-            return float(low), float(high)
-        raise ValueError(f"Unsupported thickness range key: {key}")
 
-    for key in thickness_rules:
-        low, high = parse_range(key)
-        if low is None and t <= high:
-            return key
-        if high is None and t > low:
-            return key
-        if low is not None and high is not None and low <= t <= high:
-            return key
+def _material_gas_allowed(material: str, gas: str, thickness_mm: float) -> bool:
+    gas_rule = _SCORING_RULES["materials"].get(material, {}).get(gas)
+    if gas_rule is None:
+        return False
 
-    # Fallback: choose the lowest or highest bucket if no exact match.
-    if t <= 0:
-        return min(thickness_rules, key=lambda k: parse_range(k)[1] or float("inf"))
-    return max(thickness_rules, key=lambda k: parse_range(k)[0] or float("-inf"))
+    min_thickness = gas_rule.get("min_thickness")
+    max_thickness = gas_rule.get("max_thickness")
+
+    if min_thickness is None and max_thickness is None:
+        return False
+    if min_thickness is not None and thickness_mm < float(min_thickness):
+        return False
+    if max_thickness is not None and thickness_mm > float(max_thickness):
+        return False
+    return True
 
 
 def score_assist_gas(
@@ -94,47 +84,41 @@ def score_assist_gas(
     edge_quality: str,
     post_process: str,
     cost_priority: bool,
-) -> tuple[dict[str, float], dict[str, dict[str, float]]]:
-    """Return (total_scores_per_gas, per-category breakdown) via weighted scoring."""
-    weights = _SCORING_RULES["weights"]
-    rules = _SCORING_RULES["rules"]
+) -> tuple[dict[str, float], dict[str, dict[str, float]], list[str]]:
+    """Return (total_scores_per_gas, per-category breakdown, disallowed_gases)."""
+    rules = _SCORING_RULES
     gases = _GAS_ORDER
 
-    scores: dict[str, float] = {g: 0.0 for g in gases}
-    breakdown: dict[str, dict[str, float]] = {}
+    material_scores: dict[str, float] = {}
+    disallowed: list[str] = []
+    for gas in gases:
+        allowed = _material_gas_allowed(material, gas, thickness_mm)
+        material_scores[gas] = 1.0 if allowed else 0.0
+        if not allowed:
+            disallowed.append(gas)
 
-    # Material
-    mat_key = material if material in rules["material"] else "other"
-    mat_s = rules["material"][mat_key]
-    breakdown["material"] = mat_s
-    for g in gases:
-        scores[g] += mat_s[g] * weights["material"]
+    scores = material_scores.copy()
+    breakdown: dict[str, dict[str, float]] = {
+        "material": material_scores,
+        "thickness": {g: 1.0 for g in gases},
+    }
 
-    # Thickness
-    thick_s = rules["thickness"][_thickness_range(thickness_mm)]
-    breakdown["thickness"] = thick_s
-    for g in gases:
-        scores[g] += thick_s[g] * weights["thickness"]
-
-    # Edge quality
     eq_s = rules["edge_quality"][edge_quality]
     breakdown["edge_quality"] = eq_s
     for g in gases:
-        scores[g] += eq_s[g] * weights["edge_quality"]
+        scores[g] *= eq_s[g]
 
-    # Post processing
     pp_s = rules["post_processing"][post_process]
     breakdown["post_processing"] = pp_s
     for g in gases:
-        scores[g] += pp_s[g] * weights["post_processing"]
+        scores[g] *= pp_s[g]
 
-    # Cost priority: bool → "high" / "low"
-    cost_s = rules["cost_priority"]["high" if cost_priority else "low"]
+    cost_s = rules["low_cost_priority"]["high" if cost_priority else "low"]
     breakdown["cost_priority"] = cost_s
     for g in gases:
-        scores[g] += cost_s[g] * weights["cost_priority"]
+        scores[g] *= cost_s[g]
 
-    return scores, breakdown
+    return scores, breakdown, disallowed
 
 
 # ── Asset paths ─────────────────────────────────────────────────────────────
@@ -285,6 +269,13 @@ class CalculatorsPanel(QFrame):
 
         input_inner.addWidget(row3)
 
+        self._error_lbl = QLabel()
+        self._error_lbl.setObjectName("gasErrorLabel")
+        self._error_lbl.setWordWrap(True)
+        self._error_lbl.setVisible(False)
+        self._error_lbl.setStyleSheet("color: #f87171; font-size: 12px;")
+        input_inner.addWidget(self._error_lbl)
+
         # ── Real-time recalculation ───────────────────────────────────────────
         self.material_combo.currentIndexChanged.connect(self._calculate)
         self.thickness_spin.valueChanged.connect(self._calculate)
@@ -425,9 +416,19 @@ class CalculatorsPanel(QFrame):
         if not material or not edge_quality or not post_process:
             return
 
-        scores, breakdown = score_assist_gas(
+        scores, breakdown, disallowed = score_assist_gas(
             material, thickness, edge_quality, post_process, cost_priority
         )
+
+        if disallowed:
+            disallowed_labels = [self._gas_display_name(g) for g in disallowed]
+            self._error_lbl.setText(
+                self.tr("The following gases are not allowed for this material/thickness: ")
+                + ", ".join(disallowed_labels)
+            )
+            self._error_lbl.setVisible(True)
+        else:
+            self._error_lbl.setVisible(False)
 
         # ── Ranking rows (fixed order: Compressed Air, Oxygen, Nitrogen) ────────
         score_values = [scores[g] for g in _GAS_DISPLAY_ORDER]
@@ -464,7 +465,9 @@ class CalculatorsPanel(QFrame):
         for row_idx, cat in enumerate(cat_keys):
             for col_idx, gas in enumerate(_GAS_DISPLAY_ORDER):
                 s = breakdown[cat][gas]
-                if s > 0:
+                if cat == "material" and s == 0:
+                    text, bg, fg = "✗", "#5d1a1a", "#ef9a9a"
+                elif s > 0:
                     text, bg, fg = "✓", "#1b5e20", "#a5d6a7"
                 elif s < 0:
                     text, bg, fg = "✗", "#5d1a1a", "#ef9a9a"
