@@ -60,13 +60,32 @@ _SCORE_MIN, _SCORE_MAX = _compute_score_range()
 # ── Scoring algorithm ─────────────────────────────────────────────────────────
 
 def _thickness_range(t: float) -> str:
-    if t <= 3:
-        return "<=3"
-    elif t <= 6:
-        return "3-6"
-    elif t <= 12:
-        return "6-12"
-    return ">12"
+    """Pick the matching thickness bucket from the scoring rules."""
+    thickness_rules = _SCORING_RULES["rules"]["thickness"]
+
+    def parse_range(key: str) -> tuple[float | None, float | None]:
+        if key.startswith("<="):
+            return None, float(key[2:])
+        if key.startswith(">"):
+            return float(key[1:]), None
+        if "-" in key:
+            low, high = key.split("-", 1)
+            return float(low), float(high)
+        raise ValueError(f"Unsupported thickness range key: {key}")
+
+    for key in thickness_rules:
+        low, high = parse_range(key)
+        if low is None and t <= high:
+            return key
+        if high is None and t > low:
+            return key
+        if low is not None and high is not None and low <= t <= high:
+            return key
+
+    # Fallback: choose the lowest or highest bucket if no exact match.
+    if t <= 0:
+        return min(thickness_rules, key=lambda k: parse_range(k)[1] or float("inf"))
+    return max(thickness_rules, key=lambda k: parse_range(k)[0] or float("-inf"))
 
 
 def score_assist_gas(
@@ -131,12 +150,15 @@ _GAS_COLORS = {
 }
 
 
-def _score_bar_color(score: float) -> str:
-    """Return a hex color interpolated from red (low) to green (high)."""
-    pct = max(0.0, min(1.0, (score - _SCORE_MIN) / (_SCORE_MAX - _SCORE_MIN)))
-    r = int(220 * (1.0 - pct))
-    g = int(200 * pct)
-    return f"#{r:02x}{g:02x}14"
+def _score_bar_color(score: float, lowest: float, highest: float) -> str:
+    """Return a hex color interpolated from red (lowest) to green (highest)."""
+    if highest <= lowest:
+        pct = 1.0
+    else:
+        pct = max(0.0, min(1.0, (score - lowest) / (highest - lowest)))
+    red = int(200 * (1.0 - pct))
+    green = int(140 * pct)
+    return f"#{red:02x}{green:02x}00"
 
 
 # ── Panel widget ─────────────────────────────────────────────────────────────
@@ -196,10 +218,10 @@ class CalculatorsPanel(QFrame):
         self.thickness_spin = QDoubleSpinBox()
         self.thickness_spin.setObjectName("gasSpin")
         self.thickness_spin.setMinimumHeight(36)
-        self.thickness_spin.setRange(0.1, 200.0)
-        self.thickness_spin.setDecimals(1)
-        self.thickness_spin.setSingleStep(0.5)
-        self.thickness_spin.setValue(3.0)
+        self.thickness_spin.setRange(0.01, 200.0)
+        self.thickness_spin.setDecimals(2)
+        self.thickness_spin.setSingleStep(0.01)
+        self.thickness_spin.setValue(3.00)
         self.thickness_spin.setSuffix(" mm")
         thick_col.addWidget(self.thickness_spin)
 
@@ -221,6 +243,7 @@ class CalculatorsPanel(QFrame):
         self.edge_combo.setMinimumHeight(36)
         for internal_key in ("high", "medium", "low"):
             self.edge_combo.addItem("", internal_key)
+        self.edge_combo.setCurrentIndex(1)
         eq_col.addWidget(self.edge_combo)
 
         pp_col = _col()
@@ -256,6 +279,7 @@ class CalculatorsPanel(QFrame):
             f" border-color:rgba(45,140,255,220);"
             f" image:url({_p});}}"
         )
+        self.cost_check.setChecked(True)
         row3_layout.addWidget(self.cost_check)
         row3_layout.addStretch(1)
 
@@ -406,6 +430,10 @@ class CalculatorsPanel(QFrame):
         )
 
         # ── Ranking rows (fixed order: Compressed Air, Oxygen, Nitrogen) ────────
+        score_values = [scores[g] for g in _GAS_DISPLAY_ORDER]
+        lowest_score = min(score_values)
+        highest_score = max(score_values)
+
         for (gas_key, gas_score), (name_lbl, bar) in zip(
             [(g, scores[g]) for g in _GAS_DISPLAY_ORDER], self._rank_rows
         ):
@@ -416,7 +444,7 @@ class CalculatorsPanel(QFrame):
             pct = max(0.0, min(1.0, (gas_score - _SCORE_MIN) / (_SCORE_MAX - _SCORE_MIN)))
             bar.setValue(int(pct * 100))
             bar.setStyleSheet(
-                f"QProgressBar::chunk {{ background-color: {_score_bar_color(gas_score)};"
+                f"QProgressBar::chunk {{ background-color: {_score_bar_color(gas_score, lowest_score, highest_score)};"
                 f" border-radius: 3px; }}"
             )
 

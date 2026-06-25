@@ -6,27 +6,32 @@
 	],
 	"weights": {
 		"material": 5,
-		"thickness": 3,
+		"thickness": 5,
 		"edge_quality": 4,
 		"post_processing": 3,
-		"cost_priority": 1
+		"cost_priority": 2
 	},
 	"rules": {
 		"material": {
 			"carbon_steel": {
 				"oxygen": 5,
-				"nitrogen": 2,
+				"nitrogen": 4,
 				"compressed_air": 2
 			},
 			"stainless_steel": {
 				"oxygen": -3,
 				"nitrogen": 5,
+				"compressed_air": 3
+			},
+			"galvanized_steel": {
+				"oxygen": -3,
+				"nitrogen": 5,
 				"compressed_air": 2
 			},
 			"aluminum": {
-				"oxygen": -4,
+				"oxygen": -3,
 				"nitrogen": 5,
-				"compressed_air": 2
+				"compressed_air": 3
 			},
 			"other": {
 				"oxygen": 1,
@@ -35,76 +40,76 @@
 			}
 		},
 		"thickness": {
-			"<=3": {
-				"oxygen": 1,
-				"nitrogen": 3,
-				"compressed_air": 4
-			},
-			"3-6": {
+			"<=1.9": {
 				"oxygen": 2,
-				"nitrogen": 3,
+				"nitrogen": 5,
+				"compressed_air": 5
+			},
+			"2-6": {
+				"oxygen": 4,
+				"nitrogen": 5,
 				"compressed_air": 3
 			},
-			"6-12": {
+			"8-12.7": {
 				"oxygen": 5,
-				"nitrogen": 2,
-				"compressed_air": -2
+				"nitrogen": 5,
+				"compressed_air": 1
 			},
-			">12": {
+			">12.7": {
 				"oxygen": 5,
-				"nitrogen": 1,
-				"compressed_air": -4
+				"nitrogen": 5,
+				"compressed_air": -3
 			}
 		},
 		"edge_quality": {
 			"high": {
-				"oxygen": -2,
+				"oxygen": -1,
 				"nitrogen": 5,
-				"compressed_air": 1
-			},
-			"medium": {
-				"oxygen": 2,
-				"nitrogen": 3,
 				"compressed_air": 2
 			},
-			"low": {
+			"medium": {
 				"oxygen": 3,
-				"nitrogen": 1,
-				"compressed_air": 4
+				"nitrogen": 4,
+				"compressed_air": 3
+			},
+			"low": {
+				"oxygen": 5,
+				"nitrogen": 2,
+				"compressed_air": 5
 			}
 		},
 		"post_processing": {
 			"welding": {
 				"oxygen": -3,
-				"nitrogen": 4,
-				"compressed_air": 1
+				"nitrogen": 5,
+				"compressed_air": 0
 			},
 			"painting": {
-				"oxygen": -2,
-				"nitrogen": 3,
-				"compressed_air": 2
+				"oxygen": -1,
+				"nitrogen": 5,
+				"compressed_air": 0
 			},
 			"none": {
-				"oxygen": 3,
-				"nitrogen": 2,
-				"compressed_air": 2
+				"oxygen": 5,
+				"nitrogen": 3,
+				"compressed_air": 5
 			}
 		},
 		"cost_priority": {
 			"high": {
-				"oxygen": 2,
-				"nitrogen": -2,
+				"oxygen": 0,
+				"nitrogen": -5,
 				"compressed_air": 5
 			},
 			"medium": {
-				"oxygen": 2,
+				"oxygen": 3,
 				"nitrogen": 2,
-				"compressed_air": 3
+				"compressed_air": 4
 			},
 			"low": {
-				"oxygen": 1,
-				"nitrogen": 4,
-				"compressed_air": 1
+				"oxygen": 2,
+				"nitrogen": 5,
+				"compressed_air": -1
 			}
 		}
 	}
