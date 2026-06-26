@@ -213,22 +213,11 @@ class CalculatorsPanel(QFrame):
         row1_layout.addLayout(thick_col, 1)
         input_inner.addWidget(row1)
 
-        # Row 2: edge quality + post process
+# Row 2: post process + cost priority checkbox
         row2 = _row_widget()
         row2_layout = QHBoxLayout(row2)
         row2_layout.setContentsMargins(0, 0, 0, 0)
         row2_layout.setSpacing(16)
-
-        eq_col = _col()
-        self._eq_lbl = _field_label_widget("")
-        eq_col.addWidget(self._eq_lbl)
-        self.edge_combo = QComboBox()
-        self.edge_combo.setObjectName("gasCombo")
-        self.edge_combo.setMinimumHeight(36)
-        for internal_key in ("high", "medium", "low"):
-            self.edge_combo.addItem("", internal_key)
-        self.edge_combo.setCurrentIndex(1)
-        eq_col.addWidget(self.edge_combo)
 
         pp_col = _col()
         self._pp_lbl = _field_label_widget("")
@@ -240,15 +229,12 @@ class CalculatorsPanel(QFrame):
             self.post_combo.addItem("", internal_key)
         pp_col.addWidget(self.post_combo)
 
-        row2_layout.addLayout(eq_col, 1)
-        row2_layout.addLayout(pp_col, 1)
-        input_inner.addWidget(row2)
+        row2_layout.addLayout(pp_col, 2)
 
-        # Row 3: cost priority checkbox
-        row3 = _row_widget()
-        row3_layout = QHBoxLayout(row3)
-        row3_layout.setContentsMargins(0, 0, 0, 0)
-        row3_layout.setSpacing(16)
+        cost_col = QHBoxLayout()
+        cost_col.setContentsMargins(0, 0, 0, 0)
+        cost_col.setSpacing(0)
+        cost_col.addStretch(1)
 
         self.cost_check = QCheckBox()
         self.cost_check.setObjectName("gasCheck")
@@ -264,10 +250,10 @@ class CalculatorsPanel(QFrame):
             f" image:url({_p});}}"
         )
         self.cost_check.setChecked(True)
-        row3_layout.addWidget(self.cost_check)
-        row3_layout.addStretch(1)
+        cost_col.addWidget(self.cost_check)
+        row2_layout.addLayout(cost_col, 1)
 
-        input_inner.addWidget(row3)
+        input_inner.addWidget(row2)
 
         self._error_lbl = QLabel()
         self._error_lbl.setObjectName("gasErrorLabel")
@@ -279,7 +265,6 @@ class CalculatorsPanel(QFrame):
         # ── Real-time recalculation ───────────────────────────────────────────
         self.material_combo.currentIndexChanged.connect(self._calculate)
         self.thickness_spin.valueChanged.connect(self._calculate)
-        self.edge_combo.currentIndexChanged.connect(self._calculate)
         self.post_combo.currentIndexChanged.connect(self._calculate)
         self.cost_check.stateChanged.connect(self._calculate)
         root.addWidget(input_card)
@@ -335,8 +320,8 @@ class CalculatorsPanel(QFrame):
         self._factor_header.setObjectName("gasReasonHeader")
         result_inner.addWidget(self._factor_header)
 
-        # Factor table: 5 parameter rows × 3 gas columns
-        self.factor_table = QTableWidget(5, 3)
+        # Factor table: 4 parameter rows × 3 gas columns
+        self.factor_table = QTableWidget(4, 3)
         self.factor_table.setObjectName("gasFactorTable")
         self.factor_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.factor_table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
@@ -345,7 +330,7 @@ class CalculatorsPanel(QFrame):
         self.factor_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.factor_table.setSelectionMode(QTableWidget.NoSelection)
         self.factor_table.setFocusPolicy(Qt.NoFocus)
-        self.factor_table.setFixedHeight(34 * 5 + 36)
+        self.factor_table.setFixedHeight(34 * 4 + 36)
         result_inner.addWidget(self.factor_table)
 
         root.addWidget(self.result_card)
@@ -365,7 +350,6 @@ class CalculatorsPanel(QFrame):
         self._params_lbl.setText(self.tr("Parameters"))
         self._mat_lbl.setText(self.tr("Material"))
         self._thick_lbl.setText(self.tr("Thickness (mm)"))
-        self._eq_lbl.setText(self.tr("Edge Quality"))
         self._pp_lbl.setText(self.tr("Post-Process"))
         self.cost_check.setText(self.tr("Prioritize cost reduction"))
         self._result_header.setText(self.tr("Score Ranking"))
@@ -382,8 +366,6 @@ class CalculatorsPanel(QFrame):
         for i, text in enumerate([self.tr("Carbon Steel"), self.tr("Stainless Steel"),
                                    self.tr("Galvanized Steel"), self.tr("Aluminum")]):
             self.material_combo.setItemText(i, text)
-        for i, text in enumerate([self.tr("High"), self.tr("Medium"), self.tr("Low")]):
-            self.edge_combo.setItemText(i, text)
         for i, text in enumerate([self.tr("None"), self.tr("Welding"), self.tr("Painting")]):
             self.post_combo.setItemText(i, text)
 
@@ -409,11 +391,11 @@ class CalculatorsPanel(QFrame):
     def _calculate(self) -> None:
         material = self.material_combo.currentData()
         thickness = self.thickness_spin.value()
-        edge_quality = self.edge_combo.currentData()
+        edge_quality = "medium"
         post_process = self.post_combo.currentData()
         cost_priority = self.cost_check.isChecked()
 
-        if not material or not edge_quality or not post_process:
+        if not material or not post_process:
             return
 
         scores, breakdown, disallowed = score_assist_gas(
@@ -455,13 +437,12 @@ class CalculatorsPanel(QFrame):
         self.factor_table.setVerticalHeaderLabels([
             self.tr("Material: ") + self.material_combo.currentText(),
             self.tr("Thickness: ") + _thickness_range(thickness),
-            self.tr("Edge Quality: ") + self.edge_combo.currentText(),
             self.tr("Post-Process: ") + self.post_combo.currentText(),
             self.tr("Cost Priority: ") + cost_text,
         ])
 
         # Cells: ✓ green if score > 0, ✗ red if score < 0, — neutral if zero
-        cat_keys = ["material", "thickness", "edge_quality", "post_processing", "cost_priority"]
+        cat_keys = ["material", "thickness", "post_processing", "cost_priority"]
         for row_idx, cat in enumerate(cat_keys):
             for col_idx, gas in enumerate(_GAS_DISPLAY_ORDER):
                 s = breakdown[cat][gas]
