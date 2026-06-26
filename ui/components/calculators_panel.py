@@ -7,11 +7,10 @@ from pathlib import Path
 from typing import Type
 
 from PyQt5.QtCore import QEvent, Qt
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QDoubleValidator
 from PyQt5.QtWidgets import (
     QCheckBox,
     QComboBox,
-    QDoubleSpinBox,
     QFrame,
     QHBoxLayout,
     QHeaderView,
@@ -66,16 +65,13 @@ def _material_gas_allowed(material: str, gas: str, thickness_mm: float) -> bool:
     if gas_rule is None:
         return False
 
-    min_thickness = gas_rule.get("min_thickness")
-    max_thickness = gas_rule.get("max_thickness")
+    allowed_thickness = gas_rule.get("allowed_thickness")
+    if not allowed_thickness:
+        return False
 
-    if min_thickness is None and max_thickness is None:
-        return False
-    if min_thickness is not None and thickness_mm < float(min_thickness):
-        return False
-    if max_thickness is not None and thickness_mm > float(max_thickness):
-        return False
-    return True
+    min_thickness = float(allowed_thickness[0])
+    max_thickness = float(allowed_thickness[-1])
+    return min_thickness <= thickness_mm <= max_thickness
 
 
 def score_assist_gas(
@@ -199,15 +195,15 @@ class CalculatorsPanel(QFrame):
         thick_col = _col()
         self._thick_lbl = _field_label_widget("")
         thick_col.addWidget(self._thick_lbl)
-        self.thickness_spin = QDoubleSpinBox()
-        self.thickness_spin.setObjectName("gasSpin")
-        self.thickness_spin.setMinimumHeight(36)
-        self.thickness_spin.setRange(0.01, 200.0)
-        self.thickness_spin.setDecimals(2)
-        self.thickness_spin.setSingleStep(0.01)
-        self.thickness_spin.setValue(3.00)
-        self.thickness_spin.setSuffix(" mm")
-        thick_col.addWidget(self.thickness_spin)
+        self.thickness_combo = QComboBox()
+        self.thickness_combo.setObjectName("gasCombo")
+        self.thickness_combo.setMinimumHeight(36)
+        self.thickness_combo.setEditable(True)
+        self.thickness_combo.setInsertPolicy(QComboBox.NoInsert)
+        self.thickness_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.thickness_combo.lineEdit().setValidator(QDoubleValidator(0.01, 200.0, 2, self.thickness_combo.lineEdit()))
+        self.thickness_combo.lineEdit().installEventFilter(self)
+        thick_col.addWidget(self.thickness_combo)
 
         row1_layout.addLayout(mat_col, 2)
         row1_layout.addLayout(thick_col, 1)
@@ -263,8 +259,9 @@ class CalculatorsPanel(QFrame):
         input_inner.addWidget(self._error_lbl)
 
         # ── Real-time recalculation ───────────────────────────────────────────
+        self.material_combo.currentIndexChanged.connect(self._on_material_changed)
         self.material_combo.currentIndexChanged.connect(self._calculate)
-        self.thickness_spin.valueChanged.connect(self._calculate)
+        self.thickness_combo.currentTextChanged.connect(self._calculate)
         self.post_combo.currentIndexChanged.connect(self._calculate)
         self.cost_check.stateChanged.connect(self._calculate)
         root.addWidget(input_card)
@@ -337,6 +334,7 @@ class CalculatorsPanel(QFrame):
         root.addStretch(1)
 
         self.retranslateUi()
+        self._populate_thickness_options(self.material_combo.currentData())
         # Trigger once so result shows immediately on first view.
         self._calculate()
 
@@ -374,6 +372,12 @@ class CalculatorsPanel(QFrame):
             self.retranslateUi()
         super().changeEvent(event)
 
+    def eventFilter(self, watched, event):
+        if watched is self.thickness_combo.lineEdit():
+            if event.type() in (QEvent.MouseButtonRelease, QEvent.FocusIn):
+                self.thickness_combo.showPopup()
+        return super().eventFilter(watched, event)
+
     # ── Internal helpers ─────────────────────────────────────────────────────
 
     def _gas_display_name(self, gas_key: str) -> str:
@@ -386,14 +390,54 @@ class CalculatorsPanel(QFrame):
             return self.tr("Compressed Air")
         return gas_key
 
+    def _populate_thickness_options(self, material: str | None) -> None:
+        if not material:
+            self.thickness_combo.clear()
+            return
+
+        material_rules = _SCORING_RULES["materials"].get(material, {})
+        values: set[float] = set()
+        for gas_rule in material_rules.values():
+            allowed = gas_rule.get("allowed_thickness") or []
+            for t in allowed:
+                values.add(float(t))
+
+        sorted_values = sorted(values)
+        self.thickness_combo.blockSignals(True)
+        self.thickness_combo.clear()
+        for thickness in sorted_values:
+            self.thickness_combo.addItem(f"{thickness:g}", thickness)
+        if sorted_values:
+            self.thickness_combo.setCurrentIndex(0)
+            self.thickness_combo.lineEdit().setText(f"{sorted_values[0]:g}")
+        else:
+            self.thickness_combo.lineEdit().clear()
+        self.thickness_combo.blockSignals(False)
+
+    def _on_material_changed(self, _index: int) -> None:
+        self._populate_thickness_options(self.material_combo.currentData())
+
+    def _parse_thickness(self) -> float | None:
+        text = self.thickness_combo.currentText().strip()
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
+
     # ── Calculation ───────────────────────────────────────────────────────────
 
     def _calculate(self) -> None:
         material = self.material_combo.currentData()
-        thickness = self.thickness_spin.value()
+        thickness = self._parse_thickness()
         edge_quality = "medium"
         post_process = self.post_combo.currentData()
         cost_priority = self.cost_check.isChecked()
+
+        if thickness is None:
+            self.result_card.setVisible(False)
+            return
 
         if not material or not post_process:
             return
