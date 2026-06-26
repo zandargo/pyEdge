@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Type
 
+from translations import get_saved_locale
 from PyQt5.QtCore import QEvent, Qt
 from PyQt5.QtGui import QColor, QDoubleValidator
 from PyQt5.QtWidgets import (
@@ -267,6 +268,40 @@ class CalculatorsPanel(QFrame):
         root.addWidget(input_card)
         root.addSpacing(14)
 
+        # ── Recommended gas card ─────────────────────────────────────────────
+        self.recommended_card = QFrame()
+        self.recommended_card.setObjectName("gasResultCard")
+        recommended_inner = QVBoxLayout(self.recommended_card)
+        recommended_inner.setContentsMargins(20, 18, 20, 18)
+        recommended_inner.setSpacing(12)
+
+        recommended_row = QWidget()
+        recommended_row.setStyleSheet("background: transparent;")
+        recommended_layout = QHBoxLayout(recommended_row)
+        recommended_layout.setContentsMargins(0, 0, 0, 0)
+        recommended_layout.setSpacing(8)
+
+        self._recommended_label = QLabel()
+        self._recommended_label.setObjectName("gasRecommendedLabelPrefix")
+        self._recommended_label.setStyleSheet(
+            "color: #aadddd; font-size: 16px; font-weight: 600;"
+        )
+        recommended_layout.addWidget(self._recommended_label)
+
+        self._recommended_gas_lbl = QLabel()
+        self._recommended_gas_lbl.setObjectName("gasRecommendedLabel")
+        self._recommended_gas_lbl.setStyleSheet(
+            "color: #dddddd; font-size: 24px; font-weight: 700;"
+        )
+        recommended_layout.addWidget(self._recommended_gas_lbl)
+        recommended_layout.addStretch(1)
+
+        recommended_inner.addWidget(recommended_row)
+
+        self.recommended_card.setVisible(False)
+        root.addWidget(self.recommended_card)
+        root.addSpacing(14)
+
         # ── Result card ──────────────────────────────────────────────────────
         self.result_card = QFrame()
         self.result_card.setObjectName("gasResultCard")
@@ -350,6 +385,8 @@ class CalculatorsPanel(QFrame):
         self._thick_lbl.setText(self.tr("Thickness (mm)"))
         self._pp_lbl.setText(self.tr("Post-Process"))
         self.cost_check.setText(self.tr("Prioritize cost reduction"))
+        self._recommended_label.setText(self._localized_recommended_gas_prefix())
+        self._recommended_gas_lbl.setText("")
         self._result_header.setText(self.tr("Score Ranking"))
         self._factor_header.setText(self.tr("Factor Analysis"))
 
@@ -371,6 +408,16 @@ class CalculatorsPanel(QFrame):
         if event.type() == QEvent.LanguageChange:
             self.retranslateUi()
         super().changeEvent(event)
+
+    def _localized_recommended_gas_prefix(self) -> str:
+        prefix = self.tr("Recommended gas:")
+        if not prefix or prefix == "Recommended gas":
+            prefix = self.tr("Recommended gas:")
+        if not prefix or prefix == "Recommended gas:":
+            current_locale = get_saved_locale()
+            if current_locale == "pt_BR":
+                return "Gás recomendado:"
+        return prefix
 
     def eventFilter(self, watched, event):
         if watched is self.thickness_combo.lineEdit():
@@ -446,15 +493,16 @@ class CalculatorsPanel(QFrame):
             material, thickness, edge_quality, post_process, cost_priority
         )
 
-        if disallowed:
-            disallowed_labels = [self._gas_display_name(g) for g in disallowed]
-            self._error_lbl.setText(
-                self.tr("The following gases are not allowed for this material/thickness: ")
-                + ", ".join(disallowed_labels)
-            )
-            self._error_lbl.setVisible(True)
-        else:
-            self._error_lbl.setVisible(False)
+        # if disallowed:
+        #     disallowed_labels = [self._gas_display_name(g) for g in disallowed]
+        #     self._error_lbl.setText(
+        #         self.tr(
+        #             "The following gases are not allowed for this material/thickness: {0}"
+        #         ).format(", ".join(disallowed_labels))
+        #     )
+        #     self._error_lbl.setVisible(True)
+        # else:
+        #     self._error_lbl.setVisible(False)
 
         # ── Ranking rows (fixed order: Compressed Air, Oxygen, Nitrogen) ────────
         score_values = [scores[g] for g in _GAS_DISPLAY_ORDER]
@@ -484,6 +532,12 @@ class CalculatorsPanel(QFrame):
             self.tr("Post-Process: ") + self.post_combo.currentText(),
             self.tr("Cost Priority: ") + cost_text,
         ])
+
+        best_gas = max(_GAS_DISPLAY_ORDER, key=lambda g: scores[g])
+        best_name = self._gas_display_name(best_gas) if scores[best_gas] > 0 else self.tr("None")
+        self._recommended_label.setText(self._localized_recommended_gas_prefix())
+        self._recommended_gas_lbl.setText(best_name)
+        self.recommended_card.setVisible(True)
 
         # Cells: ✓ green if score > 0, ✗ red if score < 0, — neutral if zero
         cat_keys = ["material", "thickness", "post_processing", "cost_priority"]

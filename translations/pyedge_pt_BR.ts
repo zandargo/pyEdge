@@ -268,20 +268,20 @@
         <translation>Pintura</translation>
     </message>
     <message>
-        <source>Recommended Gas</source>
-        <translation type="obsolete">Gás Recomendado</translation>
+        <source>Recommended gas:</source>
+        <translation>Gás recomendado:</translation>
     </message>
     <message>
-        <source>Reasoning</source>
-        <translation type="obsolete">Raciocínio</translation>
+        <source>None</source>
+        <translation>Nenhum</translation>
     </message>
     <message>
         <source>O₂ — Oxygen</source>
-        <translation type="obsolete">O₂ — Oxigênio</translation>
+        <translation>O₂ — Oxigênio</translation>
     </message>
     <message>
         <source>N₂ — Nitrogen</source>
-        <translation type="obsolete">N₂ — Nitrogênio</translation>
+        <translation>N₂ — Nitrogênio</translation>
     </message>
     <message>
         <source>Score Ranking</source>
@@ -322,6 +322,10 @@
     <message>
         <source>Compressed Air</source>
         <translation>Ar Comprimido</translation>
+    </message>
+    <message>
+        <source>The following gases are not allowed for this material/thickness: {0}</source>
+        <translation>Os seguintes gases não são permitidos para este material/espessura: {0}</translation>
     </message>
     <message>
         <source>Reacts exothermically with the metal, greatly increasing effective cutting power. Best for thick carbon steel. Leaves an oxide layer on edges.</source>

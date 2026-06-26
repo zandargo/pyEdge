@@ -50,12 +50,12 @@
     </message>
     <message>
         <location filename="../ui/components/calculators_panel.py" line="299"/>
-        <source>Recommended Gas</source>
+        <source>Recommended gas:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/components/calculators_panel.py" line="300"/>
-        <source>Reasoning</source>
+        <location filename="../ui/components/calculators_panel.py" line="525"/>
+        <source>None</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -155,6 +155,10 @@
     <message>
         <source>Cost Priority: </source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The following gases are not allowed for this material/thickness: {0}</source>
+        <translation>The following gases are not allowed for this material/thickness: {0}</translation>
     </message>
     <message>
         <location filename="../ui/components/calculators_panel.py" line="331"/>
